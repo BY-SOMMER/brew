@@ -466,8 +466,8 @@ module Cask
       end
     end
 
-    SOURCEFORGE_OSDN_REFERENCE_URL = "https://docs.brew.sh/Cask-Cookbook#sourceforgeosdn-urls"
-    private_constant :SOURCEFORGE_OSDN_REFERENCE_URL
+    SOURCEFORGE_REFERENCE_URL = "https://docs.brew.sh/Cask-Cookbook#sourceforge-urls"
+    private_constant :SOURCEFORGE_REFERENCE_URL
 
     sig { void }
     def audit_download_url_format
@@ -476,7 +476,7 @@ module Cask
       odebug "Auditing URL format"
       return unless bad_sourceforge_url?
 
-      add_error "SourceForge URL format incorrect. See #{Formatter.url(SOURCEFORGE_OSDN_REFERENCE_URL)}",
+      add_error "SourceForge URL format incorrect. See #{Formatter.url(SOURCEFORGE_REFERENCE_URL)}",
                 location: url.location
     end
 
