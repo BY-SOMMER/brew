@@ -21,6 +21,18 @@ RSpec.describe UnpackStrategy do
     end
   end
 
+  describe "#each_directory" do
+    it "only yields directories owned by the extracted tree" do
+      root = mktmpdir
+      (root/"directory").mkpath
+      (root/"link").make_symlink(mktmpdir)
+      directories = []
+      described_class.detect(root).each_directory(root) { |path| directories << path }
+
+      expect(directories).to contain_exactly(root, root/"directory")
+    end
+  end
+
   describe "#extract_nestedly" do
     subject(:strategy) { described_class.detect(path) }
 
