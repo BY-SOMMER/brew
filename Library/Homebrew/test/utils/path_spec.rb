@@ -47,6 +47,48 @@ RSpec.describe Utils::Path do
     it "raises the provided message for a path that is not a child" do
       expect { described_class.ensure_child_of!("/foo", "/bar/baz", message: "outside") }.to raise_error("outside")
     end
+
+    it "raises for an existing path that reaches outside the parent through a symlink" do
+      mktmpdir do |dir|
+        (dir/"outside").mkpath
+        (dir/"outside/target").write("secret\n")
+        (dir/"parent").mkpath
+        FileUtils.ln_s(dir/"outside", dir/"parent/link")
+
+        expect { described_class.ensure_child_of!(dir/"parent", dir/"parent/link/target", message: "outside") }
+          .to raise_error("outside")
+      end
+    end
+
+    it "raises for a path that does not exist yet under a symlinked directory" do
+      mktmpdir do |dir|
+        (dir/"outside").mkpath
+        (dir/"parent").mkpath
+        FileUtils.ln_s(dir/"outside", dir/"parent/link")
+
+        expect { described_class.ensure_child_of!(dir/"parent", dir/"parent/link/new", message: "outside") }
+          .to raise_error("outside")
+      end
+    end
+
+    it "raises for a dangling symlink, which `exist?` reports as missing" do
+      mktmpdir do |dir|
+        (dir/"parent").mkpath
+        FileUtils.ln_s((dir/"outside/planted").to_s, (dir/"parent/dangle").to_s)
+
+        expect { described_class.ensure_child_of!(dir/"parent", dir/"parent/dangle", message: "outside") }
+          .to raise_error("outside")
+      end
+    end
+
+    it "allows a real path within the parent" do
+      mktmpdir do |dir|
+        (dir/"parent/src").mkpath
+
+        expect { described_class.ensure_child_of!(dir/"parent", dir/"parent/src/foo.c", message: "outside") }
+          .not_to raise_error
+      end
+    end
   end
 
   describe "::cp_path_sub" do
