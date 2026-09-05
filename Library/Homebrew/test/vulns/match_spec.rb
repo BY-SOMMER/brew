@@ -153,6 +153,18 @@ RSpec.describe Homebrew::Vulns::Match do
   end
 
   describe "#range_status" do
+    it "keeps an unknown resource range unresolved when the primary package is fixed" do
+      v = vuln("id" => "CVE-1", "affected" => [
+        { "package" => { "ecosystem" => "PyPI", "name" => "requests" },
+          "ranges"  => [{ "type" => "ECOSYSTEM", "events" => [{ "introduced" => "0" }, { "fixed" => "2.0" }] }] },
+      ])
+      hit = make_hit(v,
+                     ev(:registry, ecosystem: "PyPI", name: "requests", subject_version: "3.0"),
+                     ev(:registry, ecosystem: "PyPI", name: "certifi", subject_version: nil, resource: "certifi"))
+
+      expect(matcher.range_status(hit)).to be_nil
+    end
+
     it "returns the registry-entry status when GIT ranges are uncomparable" do
       v = vuln("id" => "CVE-1", "affected" => [
         { "package" => { "ecosystem" => "GIT", "name" => "https://github.com/jqlang/jq" },
