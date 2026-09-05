@@ -19,6 +19,10 @@ RSpec.describe Cask::Info, :cask do
     "#{Tty.bold}#{string} #{Formatter.success("✔")}#{Tty.reset}"
   end
 
+  def unsatisfied_requirement(string)
+    "#{string} #{Formatter.error("✘")}#{Tty.reset}"
+  end
+
   def requirements_section(string)
     <<~EOS.chomp
       #{ohai_title "Requirements"}
@@ -134,9 +138,9 @@ RSpec.describe Cask::Info, :cask do
   it "prints cask and formulas dependencies if the Cask has both" do
     allow_any_instance_of(StringIO).to receive(:tty?).and_return(true)
     arch_requirements = if Hardware::CPU.arm?
-      "x86_64 architecture, #{installed("arm64 architecture")}"
+      "#{unsatisfied_requirement("x86_64 architecture")}, #{installed("arm64 architecture")}"
     else
-      "#{installed("x86_64 architecture")}, arm64 architecture"
+      "#{installed("x86_64 architecture")}, #{unsatisfied_requirement("arm64 architecture")}"
     end
 
     expect do
@@ -153,6 +157,14 @@ RSpec.describe Cask::Info, :cask do
       #{ohai_title "Artifacts"}
       Caffeine.app (App)
     EOS
+  end
+
+  it "marks an unsatisfied requirement on an uninstalled cask" do
+    allow_any_instance_of(StringIO).to receive(:tty?).and_return(true)
+    unsatisfied_arch = Hardware::CPU.arm? ? "x86_64" : "arm64"
+
+    expect { described_class.info(Cask::CaskLoader.load("with-depends-on-everything"), args:) }
+      .to output(/Required: .*#{unsatisfied_arch} architecture.*✘/).to_stdout
   end
 
   it "prints auto_updates if the Cask has `auto_updates true`" do

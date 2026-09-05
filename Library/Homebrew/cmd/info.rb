@@ -596,7 +596,7 @@ module Homebrew
             reqs = formula.requirements.select(&:"#{type}?")
             next if reqs.to_a.empty?
 
-            puts "#{type.capitalize}: #{decorate_requirements(reqs, mark_uninstalled: kegs.any?)}"
+            puts "#{type.capitalize}: #{decorate_requirements(reqs)}"
           end
         end
 
