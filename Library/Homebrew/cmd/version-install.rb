@@ -67,11 +67,6 @@ module Homebrew
           return
         end
 
-        existing_tap = Tap.installed
-                          .sort_by(&:name)
-                          .find { |tap| tap.formula_files_by_name.key?(versioned_name) }
-        install_target = "#{existing_tap}/#{versioned_name}" if existing_tap
-
         versioned_formula = begin
           Formulary.factory(versioned_ref, warn: false)
         rescue TapFormulaAmbiguityError, FormulaUnavailableError, TapFormulaUnavailableError,
@@ -79,24 +74,22 @@ module Homebrew
           nil
         end
 
-        if install_target.nil?
-          install_target = if versioned_formula
-            versioned_formula.full_name
-          else
-            current_formula = begin
-              Formulary.factory(formula_input, warn: false)
-            rescue FormulaUnavailableError, TapFormulaUnavailableError, TapFormulaUnreadableError
-              nil
+        install_target = if versioned_formula
+          versioned_formula.full_name
+        else
+          current_formula = begin
+            Formulary.factory(formula_input, warn: false)
+          rescue FormulaUnavailableError, TapFormulaUnavailableError, TapFormulaUnreadableError
+            nil
+          end
+
+          if current_formula && current_formula.version.to_s == version_input
+            if installed_formula_names.include?(current_formula.name)
+              ohai "#{current_formula.full_name} is already installed"
+              return
             end
 
-            if current_formula && current_formula.version.to_s == version_input
-              if installed_formula_names.include?(current_formula.name)
-                ohai "#{current_formula.full_name} is already installed"
-                return
-              end
-
-              current_formula.full_name
-            end
+            current_formula.full_name
           end
         end
 
