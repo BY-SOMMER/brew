@@ -6,6 +6,7 @@ require "utils/output"
 require "utils/ast"
 require "utils/path"
 require "time"
+require "sandbox"
 
 # Helper functions for updating PyPI resources.
 module PyPI
@@ -179,8 +180,9 @@ module PyPI
         command =
           [Utils::Path.formula_opt_libexec(@python_name)/"bin/python", "-m", "pip", "install", "-q", "--no-deps",
            "--dry-run", "--ignore-installed", "--report", "/dev/stdout", @package_string]
-        pip_output = Utils.popen_read({ "PIP_REQUIRE_VIRTUALENV" => "false" }, *command)
-        unless $CHILD_STATUS.success?
+        pip_output = begin
+          PyPI.pip_output(command)
+        rescue ErrorDuringExecution
           raise ArgumentError, <<~EOS
             Unable to determine metadata for "#{@package_string}" because of a failure when running
             `#{command.join(" ")}`.
@@ -486,6 +488,40 @@ module PyPI
     name.gsub(/[-_.]+/, "-").downcase
   end
 
+  sig { params(command: T::Array[T.any(String, Pathname)], print_stderr: T::Boolean).returns(String) }
+  def self.pip_output(command, print_stderr: false)
+    Sandbox.ensure_sandbox_available!
+    if Sandbox.avoid_nested_sandboxing?
+      raise "Python metadata inspection needs Homebrew's sandbox, which cannot run inside another sandbox."
+    end
+
+    unless Sandbox.full_write_isolation?
+      opoo <<~EOS
+        The sandbox cannot restrict file permissions or ownership.
+        Python metadata inspection uses the available sandbox protections.
+      EOS
+    end
+
+    Dir.mktmpdir("homebrew-pypi", HOMEBREW_TEMP) do |directory|
+      sandbox = Sandbox.new
+      sandbox.allow_write_path(directory)
+      sandbox.deny_write_homebrew_repository
+      sandbox.deny_read_home
+      Tempfile.create("report", directory) do |report|
+        proxy_env = ENV.to_h.filter_map do |key, value|
+          "#{key}=#{value}" if key.match?(/\A(?:https?|all|no)_proxy\z/i)
+        end
+        sandbox.run "/usr/bin/env", "-i", "PATH=#{ENV.fetch("PATH")}", *proxy_env, "HOME=#{directory}",
+                    "TMPDIR=#{directory}", "PIP_CACHE_DIR=#{directory}/cache", "PIP_CONFIG_FILE=#{File::NULL}",
+                    "PIP_REQUIRE_VIRTUALENV=false", "/bin/sh", "-c",
+                    "report=$1; shift; exec \"$@\" > \"$report\"#{" 2>/dev/null" unless print_stderr}",
+                    "brew-pypi", report.path, *command, passthrough_stdin: false
+        report.rewind
+        report.read
+      end
+    end
+  end
+
   sig {
     params(
       packages: T::Array[Package], python_name: String, print_stderr: T::Boolean,
@@ -522,10 +558,9 @@ module PyPI
       "--uploaded-prior-to=P#{Homebrew::RELEASE_COOLDOWN_DAYS}D",
       "--report=/dev/stdout", *requirements
     ]
-    options = {}
-    options[:err] = :err if print_stderr
-    pip_output = Utils.popen_read({ "PIP_REQUIRE_VIRTUALENV" => "false" }, *command, **options)
-    unless $CHILD_STATUS.success?
+    pip_output = begin
+      PyPI.pip_output(command, print_stderr:)
+    rescue ErrorDuringExecution
       odie <<~EOS
         Unable to determine dependencies for "#{packages.join(" ")}" because of a failure when running
         `#{command.join(" ")}`.
