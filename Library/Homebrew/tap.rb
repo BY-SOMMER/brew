@@ -53,7 +53,8 @@ class Tap
     #{HOMEBREW_TAP_STYLE_EXCEPTIONS_DIR}/*.json
   ].freeze
 
-  class InvalidNameError < ArgumentError; end
+  # `RuntimeError` so `brew.rb` reports it as a user error rather than a bug.
+  class InvalidNameError < RuntimeError; end
 
   # Fetch a {Tap} by name.
   #
