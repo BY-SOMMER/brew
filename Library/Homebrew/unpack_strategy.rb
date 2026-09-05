@@ -116,9 +116,10 @@ module UnpackStrategy
 
   sig {
     params(path: Pathname, prioritize_extension: T::Boolean, type: T.nilable(Symbol), ref_type: T.nilable(Symbol),
-           ref: T.nilable(String), merge_xattrs: T::Boolean).returns(UnpackStrategy)
+           ref: T.nilable(String), merge_xattrs: T::Boolean, temporary_directory: Pathname).returns(UnpackStrategy)
   }
-  def self.detect(path, prioritize_extension: false, type: nil, ref_type: nil, ref: nil, merge_xattrs: false)
+  def self.detect(path, prioritize_extension: false, type: nil, ref_type: nil, ref: nil, merge_xattrs: false,
+                  temporary_directory: HOMEBREW_TEMP)
     strategy = from_type(type) if type
 
     if prioritize_extension && path.extname.present?
@@ -135,7 +136,7 @@ module UnpackStrategy
       odeprecated strategy.to_s, replacement
     end
 
-    strategy.new(path, ref_type:, ref:, merge_xattrs:)
+    strategy.new(path, ref_type:, ref:, merge_xattrs:, temporary_directory:)
   end
 
   sig { returns(Pathname) }
@@ -144,15 +145,20 @@ module UnpackStrategy
   sig { returns(T::Boolean) }
   attr_reader :merge_xattrs
 
+  # Parent directory for nested archive staging and tar decompression.
+  sig { returns(Pathname) }
+  attr_reader :temporary_directory
+
   sig {
     params(path: T.any(String, Pathname), ref_type: T.nilable(Symbol), ref: T.nilable(String),
-           merge_xattrs: T::Boolean).void
+           merge_xattrs: T::Boolean, temporary_directory: Pathname).void
   }
-  def initialize(path, ref_type: nil, ref: nil, merge_xattrs: false)
+  def initialize(path, ref_type: nil, ref: nil, merge_xattrs: false, temporary_directory: HOMEBREW_TEMP)
     @path = T.let(Pathname(path).expand_path, Pathname)
     @ref_type = ref_type
     @ref = ref
     @merge_xattrs = merge_xattrs
+    @temporary_directory = temporary_directory
   end
 
   sig { abstract.params(unpack_dir: Pathname, basename: Pathname, verbose: T::Boolean).void }
@@ -180,7 +186,7 @@ module UnpackStrategy
     ).void
   }
   def extract_nestedly(to: nil, basename: nil, verbose: false, prioritize_extension: false)
-    Mktemp.new("homebrew-unpack").run(chdir: false) do |unpack_dir|
+    Mktemp.new("homebrew-unpack", parent: temporary_directory).run(chdir: false) do |unpack_dir|
       tmp_unpack_dir = unpack_dir.tmpdir
       raise "Failed to create a temporary directory to unpack #{path}" if tmp_unpack_dir.nil?
 
@@ -192,7 +198,7 @@ module UnpackStrategy
         first_child = children.first
         next if first_child.nil?
 
-        s = UnpackStrategy.detect(first_child, prioritize_extension:)
+        s = UnpackStrategy.detect(first_child, prioritize_extension:, temporary_directory:)
 
         s.extract_nestedly(to:, verbose:, prioritize_extension:)
 

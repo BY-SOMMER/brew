@@ -1189,6 +1189,7 @@ on_request: installed_on_request?, options:)
           sandbox.allow_write_temp_and_cache
           sandbox.deny_all_network unless formula.network_access_allowed?(:build)
         end
+        sandbox.deny_write_temp_cellar
       end
     end
 
@@ -1495,6 +1496,7 @@ on_request: installed_on_request?, options:)
         Keg.keg_link_directories.each do |dir|
           sandbox.allow_write_path "#{HOMEBREW_PREFIX}/#{dir}"
         end
+        sandbox.deny_write_temp_cellar
       end
     end
   # Handle all possible exceptions when postinstall does not complete.
@@ -1684,14 +1686,15 @@ on_request: installed_on_request?, options:)
 
       # Download queue may have already extracted the bottle to a temporary directory.
       # We cannot rely on `download_queue` here as dependencies may be poured by another installer.
-      if downloadable_object.is_a?(Bottle) &&
-         (bottle_poured_file = downloadable_object.staged_path_from_download_queue_marker).exist?
+      if downloadable_object.is_a?(Bottle) && downloadable_object.staged_from_download_queue?
         bottle_tmp_keg = downloadable_object.staged_path_from_download_queue
-        FileUtils.rm(bottle_poured_file)
+        FileUtils.rm(downloadable_object.staged_path_from_download_queue_marker)
         FileUtils.mv(bottle_tmp_keg, formula.prefix)
         rmdir_if_possible(bottle_tmp_keg.parent)
       elsif downloadable_object.is_a?(Bottle)
-        # Retries with a fresh download if the cached bottle turns out corrupt.
+        # Discard anything unexpected under the temporary Cellar path, then
+        # verify and extract afresh, refetching if the cached bottle is corrupt.
+        downloadable_object.purge_staged_from_download_queue
         downloadable_object.stage
       else
         downloadable_object.downloader.stage
