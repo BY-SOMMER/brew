@@ -263,6 +263,20 @@ class Keg
     changed_files
   end
 
+  # Serialised data such as the V8 startup snapshot in `node`'s library
+  # stores strings with a length, so the bytes after a prefix there belong
+  # to the next field and shifting them or NUL padding the tail corrupts
+  # it. Only a chunk that could be a NUL-terminated text string is patched:
+  # valid UTF-8 with no control characters other than whitespace and no
+  # longer than this bound. The bound is empirical, not a language limit:
+  # the longest C string found carrying a prefix, php's configure line, is
+  # 3740 bytes at a 13-byte prefix and would be 6.7 KiB at a 64-byte padded
+  # one, whereas `node`'s embedded `config.gypi` JSON, which is read by
+  # length, exceeds 21 KiB.
+  MAX_C_STRING_BYTESIZE = 16_384
+  C_STRING_REGEX = /\A[\t\n\r\P{Cc}]*\z/
+  private_constant :MAX_C_STRING_BYTESIZE, :C_STRING_REGEX
+
   # Returns the patched files relative to the keg.
   sig {
     params(keg: Keg, old_prefix: T.any(String, Pathname), new_prefix: T.any(String, Pathname),
@@ -312,7 +326,14 @@ class Keg
       Utils::Path.ensure_writable(file) do
         binary = File.binread file
         binary_strings = binary.split(/#{NULL_BYTE}/o, -1)
-        match_indices = binary_strings.each_index.select { |i| binary_strings.fetch(i).include?(old_prefix) }
+        match_indices = binary_strings.each_index.select do |i|
+          binary_string = binary_strings.fetch(i)
+          next false unless binary_string.include?(old_prefix)
+          next false if binary_string.bytesize > MAX_C_STRING_BYTESIZE
+
+          text = String.new(binary_string, encoding: Encoding::UTF_8)
+          text.valid_encoding? && text.match?(C_STRING_REGEX)
+        end
 
         # Bottle metadata records files pinned by any prefix, cellar or
         # repository reference, so a recorded file may not contain this
