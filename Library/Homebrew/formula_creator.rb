@@ -162,27 +162,27 @@ module Homebrew
 
     sig { returns(String) }
     def template
-      <<~ERB
+      <<~'ERB'
         # Documentation: https://docs.brew.sh/Formula-Cookbook
         #                https://docs.brew.sh/rubydoc/Formula
         # PLEASE REMOVE ALL GENERATED COMMENTS BEFORE SUBMITTING YOUR PULL REQUEST!
-        class #{Formulary.class_s(name)} < Formula
+        class <%= Formulary.class_s(name) %> < Formula
         <% if @mode == :python %>
           include Language::Python::Virtualenv
 
         <% end %>
-          desc "#{@desc}"
-          homepage "#{@homepage}"
+          desc <%= @desc.to_s.inspect %>
+          homepage <%= @homepage.to_s.inspect %>
         <% unless @head %>
-          url "#{@url}"
+          url <%= @url.inspect %>
         <% unless @version.detected_from_url? %>
-          version "#{@version.to_s.delete_prefix("v")}"
+          version <%= @version.to_s.delete_prefix("v").inspect %>
         <% end %>
-          sha256 "#{@sha256}"
+          sha256 <%= @sha256.to_s.inspect %>
         <% end %>
-          license "#{@license}"
+          license <%= @license.to_s.inspect %>
         <% if @head %>
-          head "#{@url}"
+          head <%= @url.inspect %>
         <% end %>
 
         <% if @mode == :cabal %>
@@ -211,7 +211,7 @@ module Homebrew
           #   sha256 ""
           # end
         <% elsif @mode == :python %>
-          depends_on "#{latest_versioned_formula("python")}"
+          depends_on <%= latest_versioned_formula("python").inspect %>
         <% elsif @mode == :ruby %>
           depends_on "ruby"
         <% elsif @mode == :rust %>
@@ -274,7 +274,7 @@ module Homebrew
             system "make", "install" # if this fails, try separate make/make install steps
         <% elsif @mode == :crystal %>
             system "shards", "build", *std_shards_args
-            bin.install "bin/#{name}"
+            bin.install <%= "bin/#{name}".inspect %>
         <% elsif @mode == :go %>
             system "go", "build", *std_go_args
         <% elsif @mode == :meson %>
@@ -290,7 +290,7 @@ module Homebrew
 
             # Stage additional dependency (`Makefile.PL` style).
             # resource("").stage do
-            #   system "perl", "Makefile.PL", "INSTALL_BASE=\#{libexec}"
+            #   system "perl", "Makefile.PL", "INSTALL_BASE=#{libexec}"
             #   system "make"
             #   system "make", "install"
             # end
@@ -310,10 +310,10 @@ module Homebrew
             ENV["GEM_HOME"] = libexec
 
             system "bundle", "install", "--local"
-            system "gem", "build", "\#{name}.gemspec"
-            system "gem", "install", "--ignore-dependencies", "\#{name}-\#{version}.gem"
+            system "gem", "build", "#{name}.gemspec"
+            system "gem", "install", "--ignore-dependencies", "#{name}-#{version}.gem"
 
-            bin.install libexec/"bin/\#{name}"
+            bin.install libexec/"bin/#{name}"
             bin.env_script_all_files(libexec/"bin", GEM_HOME: ENV["GEM_HOME"])
         <% elsif @mode == :rust %>
             system "cargo", "install", *std_cargo_args
@@ -332,7 +332,7 @@ module Homebrew
             #
             # This test will fail and we won't accept that! For Homebrew/homebrew-core
             # this will need to be a test that verifies the functionality of the
-            # software. Run the test with `brew test #{name}`.
+            # software. Run the test with `brew test <%= name %>`.
             #
             # The installed folder is not in the path, so use the entire path to any
             # executables being tested: `system bin/"program", "do", "something"`.
