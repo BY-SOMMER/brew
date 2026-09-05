@@ -117,6 +117,10 @@ RSpec.describe Tap do
     end.to raise_error(Tap::InvalidNameError, /Invalid tap name/)
   end
 
+  specify "::fetch raises an error `brew.rb` prints without a backtrace" do
+    expect { described_class.fetch("foo") }.to raise_error(RuntimeError, /Invalid tap name/)
+  end
+
   describe "::from_path" do
     let(:tap) { described_class.fetch("Homebrew", "core") }
     let(:path) { tap.path }
