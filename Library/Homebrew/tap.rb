@@ -821,7 +821,7 @@ class Tap
 
     require "completions"
     Homebrew::Completions.show_completions_message_if_needed
-    if official? || Homebrew::Completions.link_completions?
+    if official_git_checkout? || Homebrew::Completions.link_completions?
       Utils::Link.link_completions(path, command)
     else
       Utils::Link.unlink_completions(path)
@@ -1494,6 +1494,15 @@ class Tap
   sig { overridable.params(remote: T.nilable(String)).returns(T::Boolean) }
   def implicitly_trusted?(remote: self.remote)
     official? && canonical_remote?(remote)
+  end
+
+  # Executable checkout files require the actual Git origin, including in API mode.
+  sig { returns(T::Boolean) }
+  def official_git_checkout?
+    return false unless official?
+
+    origin = git_repository.origin_url
+    origin.present? && canonical_remote?(origin)
   end
 
   sig { overridable.params(remote: T.nilable(String)).returns(T::Boolean) }

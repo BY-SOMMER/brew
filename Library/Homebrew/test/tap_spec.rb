@@ -30,6 +30,21 @@ RSpec.describe Tap do
     $stderr.extend(Utils::Output::Mixin)
   end
 
+  it "does not grant completion trust to a custom core checkout in API mode" do
+    tap = CoreTap.instance
+    allow(tap.git_repository).to receive(:origin_url).and_return("https://git.example.com/other/core")
+    allow(Homebrew::EnvConfig).to receive(:no_install_from_api?).and_return(false)
+
+    expect(tap.official_git_checkout?).to be(false)
+  end
+
+  it "does not read the origin of a third-party tap" do
+    tap = described_class.fetch("someone", "foo")
+    allow(tap.git_repository).to receive(:origin_url).and_raise("origin must not be read")
+
+    expect(tap.official_git_checkout?).to be(false)
+  end
+
   def setup_tap_files
     formula_file.dirname.mkpath
     formula_file.write <<~RUBY
@@ -1128,6 +1143,8 @@ RSpec.describe Tap do
     setup_completion link: false
     tap = described_class.fetch("Homebrew", "baz")
     tap.install clone_target: homebrew_foo_tap.path/".git"
+    system "git", "-C", tap.path.to_s, "remote", "set-url", "origin", tap.default_remote
+    tap.link_completions_and_manpages
     (HOMEBREW_PREFIX/"share/man/man1/brew-tap-cmd.1").delete
     (HOMEBREW_PREFIX/"etc/bash_completion.d/brew-tap-cmd").delete
     (HOMEBREW_PREFIX/"share/zsh/site-functions/_brew-tap-cmd").delete

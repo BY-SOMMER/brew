@@ -88,7 +88,7 @@ module Homebrew
     def self.unlink!
       Settings.write :linkcompletions, false
       Tap.installed.each do |tap|
-        next if tap.official?
+        next if tap.official_git_checkout?
 
         Utils::Link.unlink_completions tap.path
       end
@@ -102,7 +102,7 @@ module Homebrew
     sig { returns(T::Boolean) }
     def self.completions_to_link?
       Tap.installed.each do |tap|
-        next if tap.official?
+        next if tap.official_git_checkout?
 
         SHELLS.each do |shell|
           return true if (tap.path/"completions/#{shell}").exist?
