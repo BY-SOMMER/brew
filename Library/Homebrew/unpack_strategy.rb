@@ -224,7 +224,7 @@ module UnpackStrategy
   }
   def each_directory(pathname, &_block)
     pathname.find do |path|
-      yield path if path.directory?
+      yield path if !path.symlink? && path.directory?
     end
   end
 end
