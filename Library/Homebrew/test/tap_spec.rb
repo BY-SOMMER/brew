@@ -1249,6 +1249,16 @@ RSpec.describe Tap do
         let(:cask_tap) { CoreCaskTap.instance }
         let(:core_tap) { CoreTap.instance }
 
+        it "checks an installed formula's provider before accepting a migration" do
+          rack = HOMEBREW_CELLAR/"schismtracker/1.0"
+          rack.mkpath
+          tab = Tab.empty
+          tab.source["tap"] = "homebrew/unrelated"
+          allow(Tab).to receive(:for_keg).with(rack).and_return(tab)
+
+          expect(described_class.tap_migration_oldnames(cask_tap, "schism-tracker")).to be_empty
+        end
+
         it "returns expected renames", :no_api do
           [
             [cask_tap, "gimp", []],

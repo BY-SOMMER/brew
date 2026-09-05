@@ -1293,14 +1293,30 @@ class Tap
   end
 
   # The old names a formula or cask had before getting migrated to the current tap.
-  sig { params(current_tap: Tap, name_or_token: String).returns(T::Array[String]) }
-  def self.tap_migration_oldnames(current_tap, name_or_token)
+  sig { params(current_tap: Tap, name_or_token: String, cask: T::Boolean).returns(T::Array[String]) }
+  def self.tap_migration_oldnames(current_tap, name_or_token, cask: false)
+    require "tab"
+
     key = "#{current_tap}/#{name_or_token}"
 
     Tap.each_with_object([]) do |tap, array|
       next unless (renames = tap.reverse_tap_migrations_renames[key])
 
-      array.concat(renames)
+      array.concat(renames.select do |oldname|
+        next false if [".", ".."].include?(oldname) || !Utils.safe_filename?(oldname)
+
+        if cask
+          old_cask = Cask::Cask.new(oldname)
+          next true unless old_cask.caskroom_path.directory?
+
+          old_cask.tab.tap == tap
+        else
+          old_rack = HOMEBREW_CELLAR/oldname
+          next true unless old_rack.directory?
+
+          old_rack.subdirs.all? { |keg| Tab.for_keg(keg).tap == tap }
+        end
+      end)
     end
   end
 
