@@ -30,7 +30,7 @@ module Homebrew
         ) do
           version cask_struct.version
           sha256 cask_struct.sha256
-          url(*cask_struct.url_args, **cask_struct.url_kwargs)
+          url(*cask_struct.url_args, **cask_struct.url_kwargs.except(:verified))
           homepage cask_struct.homepage if cask_struct.homepage?
           if cask_struct.container?
             container(nested: cask_struct.container_args[:nested], type: cask_struct.container_args[:type])

@@ -181,6 +181,22 @@ RSpec.describe Cask::CaskLoader::FromAPILoader, :cask do
   end
 
   describe "#load" do
+    it "loads existing JSON metadata that still has a verified URL spec" do
+      cask = described_class.new(
+        "legacy-verified",
+        from_json:               {
+          "version"   => "1.0",
+          "url"       => "https://cdn.example.com/app.dmg",
+          "url_specs" => { "verified" => "cdn.example.com/" },
+          "artifacts" => [{ "app" => ["App.app"] }],
+        },
+        path:                    Pathname("/tmp/legacy-verified.json"),
+        from_installed_caskfile: true,
+      ).load(config: nil)
+
+      expect(cask.url.to_s).to eq("https://cdn.example.com/app.dmg")
+    end
+
     it "does not dispatch unknown raw artifacts" do
       marker = mktmpdir/"unexpected-dispatch"
       cask_struct = Homebrew::API::CaskStruct.new(

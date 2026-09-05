@@ -73,7 +73,8 @@ module Cask
       header = Array(header) unless header.nil?
 
       specs = {}
-      specs[:verified]   = @verified   = T.let(verified, T.nilable(String))
+      # `verified` is accepted as a no-op for compatibility with existing casks.
+      @verified = verified
       specs[:using]      = @using      = T.let(using, T.nilable(T.any(T::Class[AbstractDownloadStrategy], Symbol)))
       specs[:tag]        = @tag        = T.let(tag, T.nilable(String))
       specs[:branch]     = @branch     = T.let(branch, T.nilable(String))

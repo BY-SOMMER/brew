@@ -530,7 +530,7 @@ module Cask
           version localised_cask_struct.version
           sha256 localised_cask_struct.sha256
 
-          url(*localised_cask_struct.url_args, **localised_cask_struct.url_kwargs)
+          url(*localised_cask_struct.url_args, **localised_cask_struct.url_kwargs.except(:verified))
           localised_cask_struct.names.each do |cask_name|
             name cask_name
           end
