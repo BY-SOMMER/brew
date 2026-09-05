@@ -41,6 +41,24 @@ end
 RSpec.describe Commands do
   include_context "custom internal commands"
 
+  test_each(["../other", ".", ".."]) do |cmd|
+    it "rejects #{cmd.inspect} before attempting to load an internal command" do
+      allow(Utils::Ruby).to receive(:require?).and_raise("Loading is not permitted")
+
+      expect(described_class.valid_internal_cmd?(cmd)).to be(false)
+    end
+
+    it "rejects #{cmd.inspect} before attempting to load an internal developer command" do
+      allow(Utils::Ruby).to receive(:require?).and_raise("Loading is not permitted")
+
+      expect(described_class.valid_internal_dev_cmd?(cmd)).to be(false)
+    end
+  end
+
+  it "does not resolve a path component as an internal command path" do
+    expect(described_class.path("../brew")).to be_nil
+  end
+
   specify "::internal_commands" do
     cmds = described_class.internal_commands
     expect(cmds).to include("rbcmd"), "Ruby commands files should be recognized"
