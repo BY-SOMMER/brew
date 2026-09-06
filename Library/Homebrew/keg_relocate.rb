@@ -225,7 +225,7 @@ class Keg
 
   sig { params(file: Pathname).returns(T::Boolean) }
   def homebrew_created_file?(file)
-    return false unless file.basename.to_s.start_with?("homebrew.")
+    return false unless file.basename.to_s.start_with?("homebrew.", "sh.brew.")
 
     %w[.plist .service .timer].include?(file.extname)
   end

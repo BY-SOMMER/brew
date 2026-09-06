@@ -1675,22 +1675,22 @@ RSpec.describe Formula do
 
       expect(f.plist_name).to eq("sh.brew.formula_name")
       expect(f.plist_names).to eq(["sh.brew.formula_name", "homebrew.mxcl.formula_name"])
-      expect(f.service_name).to eq("homebrew.formula_name")
-      expect(f.service_names).to eq(["homebrew.formula_name", "sh.brew.formula_name"])
+      expect(f.service_name).to eq("sh.brew.formula_name")
+      expect(f.service_names).to eq(["sh.brew.formula_name", "homebrew.formula_name"])
       expect(f.launchd_service_path).to eq(HOMEBREW_PREFIX/"opt/formula_name/sh.brew.formula_name.plist")
       expect(f.launchd_service_paths).to eq([
         HOMEBREW_PREFIX/"opt/formula_name/sh.brew.formula_name.plist",
         HOMEBREW_PREFIX/"opt/formula_name/homebrew.mxcl.formula_name.plist",
       ])
-      expect(f.systemd_service_path).to eq(HOMEBREW_PREFIX/"opt/formula_name/homebrew.formula_name.service")
+      expect(f.systemd_service_path).to eq(HOMEBREW_PREFIX/"opt/formula_name/sh.brew.formula_name.service")
       expect(f.systemd_service_paths).to eq([
-        HOMEBREW_PREFIX/"opt/formula_name/homebrew.formula_name.service",
         HOMEBREW_PREFIX/"opt/formula_name/sh.brew.formula_name.service",
+        HOMEBREW_PREFIX/"opt/formula_name/homebrew.formula_name.service",
       ])
-      expect(f.systemd_timer_path).to eq(HOMEBREW_PREFIX/"opt/formula_name/homebrew.formula_name.timer")
+      expect(f.systemd_timer_path).to eq(HOMEBREW_PREFIX/"opt/formula_name/sh.brew.formula_name.timer")
       expect(f.systemd_timer_paths).to eq([
-        HOMEBREW_PREFIX/"opt/formula_name/homebrew.formula_name.timer",
         HOMEBREW_PREFIX/"opt/formula_name/sh.brew.formula_name.timer",
+        HOMEBREW_PREFIX/"opt/formula_name/homebrew.formula_name.timer",
       ])
     end
   end

@@ -60,9 +60,9 @@ RSpec.describe Utils::Service do
       systemctl = Pathname("/bin/systemctl")
       allow(described_class).to receive_messages(launchctl: nil, systemctl?: true, systemctl:)
       expect(SystemCommand).to receive(:quiet_system)
-        .with(systemctl, "is-active", "--quiet", "homebrew.formula_name").and_return(false)
+        .with(systemctl, "is-active", "--quiet", "sh.brew.formula_name").and_return(false)
       expect(SystemCommand).to receive(:quiet_system)
-        .with(systemctl, "is-active", "--quiet", "sh.brew.formula_name").and_return(true)
+        .with(systemctl, "is-active", "--quiet", "homebrew.formula_name").and_return(true)
 
       expect(described_class.running?(f)).to be true
     end

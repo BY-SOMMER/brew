@@ -63,7 +63,7 @@ module Homebrew
         end
 
         if loaded_name.present? && loaded_name != service.service_name
-          if System.launchctl? && service.service_file_generated? && service.service_names.include?(loaded_name)
+          if service.service_file_generated? && service.service_names.include?(loaded_name)
             puts "Service `#{service.name}` is already loaded as `#{loaded_name}`; " \
                  "a service label migration is pending. Use `#{bin} restart #{service.name}` " \
                  "to migrate to `#{service.service_name}`."

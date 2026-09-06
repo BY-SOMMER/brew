@@ -1736,9 +1736,10 @@ RSpec.describe FormulaInstaller do
 
       expect([
         launchd_service_path.basename.to_s,
+        service_path.basename.to_s,
         launchd_service_path.exist?,
         service_path.exist?,
-      ]).to eq(["sh.brew.testball.plist", true, true])
+      ]).to eq(["sh.brew.testball.plist", "sh.brew.testball.service", true, true])
     end
 
     it "works if timed service is set" do
@@ -1766,9 +1767,13 @@ RSpec.describe FormulaInstaller do
         installer.install_service
       end.not_to output(/Error: Failed to install service files/).to_stderr
 
-      expect(launchd_service_path).to exist
-      expect(service_path).to exist
-      expect(timer_path).to exist
+      expect([
+        service_path.basename.to_s,
+        timer_path.basename.to_s,
+        launchd_service_path.exist?,
+        service_path.exist?,
+        timer_path.exist?,
+      ]).to eq(["sh.brew.testball.service", "sh.brew.testball.timer", true, true, true])
     end
 
     it "returns without definition" do

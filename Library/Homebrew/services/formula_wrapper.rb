@@ -113,7 +113,7 @@ module Homebrew
       end
 
       # service_name delegates with formula.plist_name or formula.service_name
-      # for systemd (e.g., `homebrew.<formula>`).
+      # for systemd (e.g., `sh.brew.<formula>`).
       sig { returns(String) }
       def service_name
         @service_name ||= T.let(
@@ -443,7 +443,7 @@ module Homebrew
             success = ($CHILD_STATUS&.success? || false) && output.present?
             odebug [System::Systemctl.executable, System::Systemctl.scope, *cmd].join(" "), output
             candidate = StatusOutputSuccessType.new(output, success, :systemctl, name)
-            result ||= candidate
+            result ||= candidate if output.present?
             if status_pid(candidate)&.positive?
               result = candidate
               break

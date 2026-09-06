@@ -106,7 +106,7 @@ module Homebrew
 
     sig { returns(String) }
     def default_service_name
-      legacy_service_name
+      canonical_service_name
     end
 
     sig { returns(String) }
