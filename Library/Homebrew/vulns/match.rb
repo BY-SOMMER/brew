@@ -624,9 +624,9 @@ module Homebrew
       #   i.e. Homebrew jumped from a version below `introduced` straight past
       #   `fixed` and never shipped an affected build. The caller drops the
       #   candidate rather than emitting `{introduced: "0", fixed: <first>}`.
-      # - a `pkg_version` String when the walk hits `:affected`, or when it
-      #   stops at an unloadable revision (best-effort boundary; the reviewer
-      #   can tighten).
+      # - `:history_unavailable` when a revision cannot be loaded or compared,
+      #   so the caller can skip the candidate rather than inventing a boundary.
+      # - a `pkg_version` String when the walk hits `:affected`.
       #
       # The rev-list and per-revision loads are cached per formula.
       sig { params(formula: Formula, hit: Hit).returns(T.nilable(T.any(String, Symbol))) }
@@ -642,14 +642,21 @@ module Homebrew
           state = fv.formula_at_revision(rev, entry) do |old|
             [aggregate_state_at(old, hit), old.pkg_version.to_s]
           end
-          # `nil` means the revision failed to load; can't verify further.
-          return last_fixed if state.nil?
+          return :history_unavailable if state.nil?
 
           aggregate, pkg_version = state
-          return :never_affected if aggregate == :not_applicable
-          return last_fixed if aggregate != :fixed
-
-          last_fixed = pkg_version
+          case aggregate
+          when :fixed
+            last_fixed = pkg_version
+          when :affected
+            return last_fixed
+          when :not_applicable
+            return :never_affected
+          when nil
+            return :history_unavailable
+          else
+            raise TypeError, "unexpected historical aggregate: #{aggregate.inspect}"
+          end
         end
         :never_affected
       end

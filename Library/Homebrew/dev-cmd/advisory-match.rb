@@ -105,9 +105,21 @@ module Homebrew
                   walk_history &&= emitter.history_required?(record_id) if args.new_history?
                   emitter.record_history_walk if walk_history
                   first_fixed = matcher.first_fixed_version(formula, hit) if walk_history
-                  next if first_fixed == :never_affected
+                  fixed_boundary = T.let(nil, T.nilable(String))
+                  case first_fixed
+                  when String
+                    fixed_boundary = first_fixed
+                  when nil
+                    # No history walk was required.
+                  when :never_affected
+                    next
+                  when :history_unavailable
+                    opoo "#{record_id}: formula history is unavailable; skipping automatic update"
+                    next
+                  else
+                    raise TypeError, "unexpected fixed-history result: #{first_fixed.inspect}"
+                  end
 
-                  fixed_boundary = first_fixed if first_fixed.is_a?(String)
                   if fixed_boundary && !emitter.fixed_boundary_valid?(record_id, fixed_boundary)
                     onoe "#{record_id}: fixed #{fixed_boundary} does not follow its reviewed range"
                     Homebrew.failed = true

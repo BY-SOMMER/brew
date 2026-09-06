@@ -522,6 +522,55 @@ RSpec.describe Homebrew::DevCmd::AdvisoryMatch do
     end
   end
 
+  it "skips a new record when formula history is unavailable" do
+    stub_osv_hit("CVE-2024-1234", fixed: "2.28.1")
+    matcher = Homebrew::Vulns::Match.new
+    expect(matcher).to receive(:first_fixed_version).and_return(:history_unavailable)
+    allow(Homebrew::Vulns::Match).to receive(:new).and_return(matcher)
+
+    Dir.mktmpdir do |dir|
+      expect { cmd_for("requests", "--output", dir, "--new-history").run }
+        .to output(/formula history is unavailable; skipping automatic update/).to_stderr
+      expect(Dir.glob(File.join(dir, "*.json"))).to be_empty
+    end
+  end
+
+  it "leaves an existing open range unchanged when formula history is unavailable" do
+    stub_osv_hit("CVE-2024-1234", fixed: "2.28.1")
+    matcher = Homebrew::Vulns::Match.new
+    expect(matcher).to receive(:first_fixed_version).and_return(:history_unavailable)
+    allow(Homebrew::Vulns::Match).to receive(:new).and_return(matcher)
+
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "BREW-requests-CVE-2024-1234.json")
+      existing = {
+        "id"                => "BREW-requests-CVE-2024-1234",
+        "affected"          => [{
+          "package" => { "ecosystem" => "Homebrew", "name" => "requests" },
+          "ranges"  => [{ "type" => "ECOSYSTEM", "events" => [{ "introduced" => "1.0" }] }],
+        }],
+        "database_specific" => { "source" => "matched" },
+      }
+      File.write(path, JSON.generate(existing))
+
+      expect { cmd_for("requests", "--output", dir, "--new-history").run }
+        .to output(/formula history is unavailable; skipping automatic update/).to_stderr
+      expect([JSON.parse(File.read(path)), Homebrew.failed?]).to eq [existing, false]
+    end
+  end
+
+  it "rejects an unknown fixed-history result" do
+    stub_osv_hit("CVE-2024-1234", fixed: "2.28.1")
+    matcher = Homebrew::Vulns::Match.new
+    expect(matcher).to receive(:first_fixed_version).and_return(:future_result)
+    allow(Homebrew::Vulns::Match).to receive(:new).and_return(matcher)
+
+    Dir.mktmpdir do |dir|
+      expect { cmd_for("requests", "--output", dir, "--new-history").run }
+        .to raise_error(TypeError, /unexpected fixed-history result: :future_result/)
+    end
+  end
+
   it "walks history when an existing matched record has no ranges" do
     stub_osv_hit("CVE-2024-1234", fixed: "2.28.1")
     matcher = Homebrew::Vulns::Match.new
