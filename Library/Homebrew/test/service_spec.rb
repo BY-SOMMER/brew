@@ -1256,7 +1256,7 @@ RSpec.describe Homebrew::Service do
         WantedBy=timers.target
 
         [Timer]
-        Unit=homebrew.formula_name.service
+        Unit=sh.brew.formula_name.service
         OnUnitActiveSec=5
       SYSTEMD
       expect(unit).to eq(unit_expect)
@@ -1280,7 +1280,7 @@ RSpec.describe Homebrew::Service do
         WantedBy=timers.target
 
         [Timer]
-        Unit=homebrew.formula_name.service
+        Unit=sh.brew.formula_name.service
 
       SYSTEMD
       expect(unit).to eq(unit_expect)
@@ -1331,7 +1331,7 @@ RSpec.describe Homebrew::Service do
           WantedBy=timers.target
 
           [Timer]
-          Unit=homebrew.formula_name.service
+          Unit=sh.brew.formula_name.service
           Persistent=true
           OnCalendar=#{calendar}
         SYSTEMD

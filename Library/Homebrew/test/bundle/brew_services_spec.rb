@@ -140,8 +140,8 @@ RSpec.describe Homebrew::Bundle::Brew::Services do
         rack:          HOMEBREW_CELLAR/"fooformula",
         plist_name:    "sh.brew.fooformula",
         plist_names:   ["sh.brew.fooformula", "homebrew.mxcl.fooformula"],
-        service_name:  "homebrew.fooformula",
-        service_names: ["homebrew.fooformula", "sh.brew.fooformula"],
+        service_name:  "sh.brew.fooformula",
+        service_names: ["sh.brew.fooformula", "homebrew.fooformula"],
       )
     end
 
@@ -197,7 +197,7 @@ RSpec.describe Homebrew::Bundle::Brew::Services do
 
         prefix = foo.rack/foo.version
         prefix.mkpath
-        service_file = prefix/"sh.brew.fooformula.service"
+        service_file = prefix/"homebrew.fooformula.service"
         service_file.write("service")
 
         expect(described_class.versioned_service_file(foo.name)).to eq(service_file)

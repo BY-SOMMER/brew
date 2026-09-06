@@ -553,6 +553,12 @@ RSpec.describe Keg do
       expect(keg.homebrew_created_file?(regular_file)).to be false
       expect(keg.homebrew_created_file?(non_homebrew_plist)).to be false
     end
+
+    it "identifies canonical Homebrew service files" do
+      service_files = %w[sh.brew.foo.plist sh.brew.foo.service sh.brew.foo.timer].map { |file| Pathname(file) }
+
+      expect(service_files.map { |file| keg.homebrew_created_file?(file) }).to all(be(true))
+    end
   end
 
   specify "#link and #unlink" do
