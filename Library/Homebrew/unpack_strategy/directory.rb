@@ -18,15 +18,17 @@ module UnpackStrategy
 
     sig {
       params(
-        path:         T.any(String, Pathname),
-        ref_type:     T.nilable(Symbol),
-        ref:          T.nilable(String),
-        merge_xattrs: T::Boolean,
-        move:         T::Boolean,
+        path:                T.any(String, Pathname),
+        ref_type:            T.nilable(Symbol),
+        ref:                 T.nilable(String),
+        merge_xattrs:        T::Boolean,
+        move:                T::Boolean,
+        temporary_directory: Pathname,
       ).void
     }
-    def initialize(path, ref_type: nil, ref: nil, merge_xattrs: false, move: false)
-      super(path, ref_type:, ref:, merge_xattrs:)
+    def initialize(path, ref_type: nil, ref: nil, merge_xattrs: false, move: false,
+                   temporary_directory: HOMEBREW_TEMP)
+      super(path, ref_type:, ref:, merge_xattrs:, temporary_directory:)
       @move = move
     end
 

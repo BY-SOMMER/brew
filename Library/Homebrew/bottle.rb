@@ -246,8 +246,12 @@ class Bottle
   sig { void }
   def stage
     with_corrupt_download_retry do
-      verify_download_integrity(cached_download)
-      downloader.stage
+      with_verified_snapshot(cached_download) do |snapshot|
+        UnpackStrategy.detect(snapshot, prioritize_extension: true, temporary_directory: snapshot.dirname)
+                      .extract_nestedly(basename:             downloader.basename,
+                                        prioritize_extension: true,
+                                        verbose:              verbose? && !downloader.quiet?)
+      end
     end
   rescue ChecksumMismatchError
     # The retry's fresh download can itself fail verification, raising from
@@ -343,16 +347,14 @@ class Bottle
     # Stay quiet on the retry: the download queue is redrawing its own
     # progress lines while this runs in a worker thread.
     with_corrupt_download_retry(quiet: true) do
-      HOMEBREW_TEMP_CELLAR.mkpath
+      # Never reuse a marker or keg already here: sandboxed build and
+      # postinstall steps may have written them.
+      purge_staged_from_download_queue
 
-      next if bottle_poured_file.exist?
-
-      FileUtils.rm(bottle_poured_file) if bottle_poured_file.symlink?
-      FileUtils.rm_r(bottle_tmp_keg) if bottle_tmp_keg.directory?
-
-      verify_download_integrity(download)
-      UnpackStrategy.detect(download, prioritize_extension: true)
-                    .extract_nestedly(to: HOMEBREW_TEMP_CELLAR)
+      with_verified_snapshot(download) do |snapshot|
+        UnpackStrategy.detect(snapshot, prioritize_extension: true, temporary_directory: snapshot.dirname)
+                      .extract_nestedly(to: HOMEBREW_TEMP_CELLAR)
+      end
 
       # Create a separate file to mark a completed extraction. This avoids
       # a potential race condition if a user interrupts the install.
@@ -361,11 +363,39 @@ class Bottle
       FileUtils.ln_s(bottle_tmp_keg, bottle_poured_file)
     # Catch any exception type here to clean up partial queued extractions.
     rescue Exception # rubocop:disable Lint/RescueException
-      Utils::Interrupts.ignore do
-        FileUtils.rm_r(bottle_tmp_keg) if bottle_tmp_keg.directory?
-        Utils::Path.rmdir_if_possible(bottle_tmp_keg.parent)
-      end
+      Utils::Interrupts.ignore { purge_staged_from_download_queue }
       raise
+    end
+  end
+
+  # Whether the download queue left a keg here that `pour` may move into the
+  # Cellar: the marker must point at the expected keg and the keg must be a
+  # real directory, so entries planted by other processes are ignored.
+  sig { returns(T::Boolean) }
+  def staged_from_download_queue?
+    marker = staged_path_from_download_queue_marker
+    keg = staged_path_from_download_queue
+    marker.symlink? && marker.readlink == keg && !keg.symlink? && keg.directory?
+  end
+
+  sig { void }
+  def purge_staged_from_download_queue
+    keg = staged_path_from_download_queue
+    FileUtils.rm_rf([staged_path_from_download_queue_marker, keg])
+    Utils::Path.rmdir_if_possible(keg.parent)
+  end
+
+  # Verify a private copy of the download and hand it to the block, so the
+  # bytes extracted are the bytes verified even if the cached download is
+  # changed underneath by a process with write access to the cache.
+  sig { params(download: Pathname, _block: T.proc.params(snapshot: Pathname).void).void }
+  def with_verified_snapshot(download, &_block)
+    HOMEBREW_TEMP_CELLAR.mkpath
+    Dir.mktmpdir("verify-", HOMEBREW_TEMP_CELLAR) do |directory|
+      snapshot = Pathname(directory)/download.basename
+      FileUtils.copy_file(download, snapshot)
+      verify_download_integrity(snapshot)
+      yield snapshot
     end
   end
 

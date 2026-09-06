@@ -519,6 +519,15 @@ class Sandbox
     allow_write_path formula.var
   end
 
+  # Deny writes to the download queue's temporary Cellar so sandboxed steps
+  # cannot plant kegs or markers that `pour` would move into the Cellar. Call
+  # this after `allow_write_cellar`: the temporary Cellar is inside the
+  # granted `var` tree and macOS applies the last matching rule.
+  sig { void }
+  def deny_write_temp_cellar
+    deny_write_path HOMEBREW_TEMP_CELLAR
+  end
+
   sig { void }
   def allow_write_xcode; end
 
