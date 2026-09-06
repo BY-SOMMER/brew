@@ -1152,6 +1152,15 @@ __fish_brew_complete_arg 'generate-analytics-api' -l quiet -d 'Make some output 
 __fish_brew_complete_arg 'generate-analytics-api' -l verbose -d 'Make some output more verbose'
 
 
+complete -f -c brew -n 'not __fish_brew_command; and set -q HOMEBREW_DEVELOPER' -a 'generate-bottle-ci-matrix' -d 'Generate a GitHub Actions runner matrix for a dispatched bottle build'
+__fish_brew_complete_arg 'generate-bottle-ci-matrix' -l debug -d 'Display any debugging information'
+__fish_brew_complete_arg 'generate-bottle-ci-matrix' -l help -d 'Show this message'
+__fish_brew_complete_arg 'generate-bottle-ci-matrix' -l quiet -d 'Make some output more quiet'
+__fish_brew_complete_arg 'generate-bottle-ci-matrix' -l runners -d 'Build runner names as a comma-separated list'
+__fish_brew_complete_arg 'generate-bottle-ci-matrix' -l verbose -d 'Make some output more verbose'
+__fish_brew_complete_arg 'generate-bottle-ci-matrix' -a '(__fish_brew_suggest_formulae_all)'
+
+
 complete -f -c brew -n 'not __fish_brew_command; and set -q HOMEBREW_DEVELOPER' -a 'generate-cask-api' -d 'Generate `homebrew/cask` API data files for https://formulae.brew.sh'
 __fish_brew_complete_arg 'generate-cask-api' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'generate-cask-api' -l dry-run -d 'Generate API data without writing it to files'
@@ -2158,6 +2167,7 @@ __fish_brew_complete_arg 'update-perl-resources' -a '(__fish_brew_suggest_formul
 complete -f -c brew -n 'not __fish_brew_command; and set -q HOMEBREW_DEVELOPER' -a 'update-portable-ruby' -d 'Update the vendored `portable-ruby` from the current `portable-ruby` formula: write the version files and bottle checksums, run `brew vendor-install ruby`, then sync `utils/ruby.sh`, vendored gems and RBI files to the bundler shipped by the new ruby'
 __fish_brew_complete_arg 'update-portable-ruby' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'update-portable-ruby' -l help -d 'Show this message'
+__fish_brew_complete_arg 'update-portable-ruby' -l print-target-version -d 'Print the target portable Ruby package version without updating it'
 __fish_brew_complete_arg 'update-portable-ruby' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'update-portable-ruby' -l verbose -d 'Make some output more verbose'
 

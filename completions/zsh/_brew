@@ -282,6 +282,7 @@ __brew_internal_commands() {
       'formula-analytics:Query Homebrew'\''s analytics'
       'generate-advisories-api:Generate advisory API data for https://formulae.brew.sh from a checkout of https://github.com/Homebrew/advisory-database'
       'generate-analytics-api:Generates analytics API data files for https://formulae.brew.sh'
+      'generate-bottle-ci-matrix:Generate a GitHub Actions runner matrix for a dispatched bottle build'
       'generate-cask-api:Generate `homebrew/cask` API data files for https://formulae.brew.sh'
       'generate-cask-ci-matrix:Generate a GitHub Actions matrix for a given pull request URL or list of cask names'
       'generate-formula-api:Generate `homebrew/core` API data files for https://formulae.brew.sh'
@@ -1507,6 +1508,18 @@ _brew_generate_analytics_api() {
     '--help[Show this message]' \
     '--quiet[Make some output more quiet]' \
     '--verbose[Make some output more verbose]'
+}
+
+# brew generate-bottle-ci-matrix
+_brew_generate_bottle_ci_matrix() {
+  _arguments \
+    '--debug[Display any debugging information]' \
+    '--help[Show this message]' \
+    '--quiet[Make some output more quiet]' \
+    '--runners[Build runner names as a comma-separated list]' \
+    '--verbose[Make some output more verbose]' \
+    - formula \
+    '*:formula:__brew_formulae'
 }
 
 # brew generate-cask-api
@@ -2767,6 +2780,7 @@ _brew_update_portable_ruby() {
   _arguments \
     '--debug[Display any debugging information]' \
     '--help[Show this message]' \
+    '--print-target-version[Print the target portable Ruby package version without updating it]' \
     '--quiet[Make some output more quiet]' \
     '--verbose[Make some output more verbose]'
 }
