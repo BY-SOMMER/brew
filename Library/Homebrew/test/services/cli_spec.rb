@@ -110,6 +110,21 @@ RSpec.describe Homebrew::Services::Cli do
       expect(stale_timer).not_to exist
     end
 
+    it "keeps systemd service files for an active timer" do
+      path = mktmpdir
+      service_file = path/"homebrew.name.service"
+      timer_file = path/"homebrew.name.timer"
+      service_file.write("service")
+      timer_file.write("timer")
+      allow(Homebrew::Services::System).to receive_messages(launchctl?: false, path:, systemctl?: true)
+      allow(Homebrew::Services::System::Systemctl).to receive(:quiet_run)
+        .with("status", "homebrew.name.timer").and_return(true)
+      allow(services_cli).to receive(:running).and_return([])
+
+      expect([services_cli.remove_unused_service_files, service_file.exist?, timer_file.exist?])
+        .to eq([[], true, true])
+    end
+
     it "removes unused canonical macOS service files" do
       path = mktmpdir
       active_service = path/"sh.brew.name.plist"

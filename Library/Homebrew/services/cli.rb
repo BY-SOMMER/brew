@@ -111,6 +111,8 @@ module Homebrew
           label = FormulaWrapper.service_file_label(file) if file.extname.casecmp?(".plist")
           service_name = label || File.basename(file).sub(/\.(?:plist|service|timer)$/i, "")
           next if running_services.include?(service_name)
+          next if System.systemctl? && !file.extname.casecmp?(".plist") &&
+                  System::Systemctl.quiet_run("status", "#{service_name}.timer")
           next if label && System.launchctl? && System.launchctl_service_running?(label)
 
           puts "Removing unused service file: #{file}"
