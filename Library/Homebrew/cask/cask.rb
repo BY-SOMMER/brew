@@ -147,7 +147,7 @@ module Cask
     def old_tokens
       @old_tokens ||= T.let(
         if (t = tap)
-          Tap.tap_migration_oldnames(t, token) +
+          Tap.tap_migration_oldnames(t, token, cask: true) +
             t.cask_reverse_renames.fetch(token, [])
         else
           []
