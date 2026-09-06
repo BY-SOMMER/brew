@@ -104,7 +104,7 @@ __brew_complete_commands() {
   fi
   if [[ -n ${HOMEBREW_DEVELOPER:-} ]]
   then
-    maintainer_cmds="advisory-match determine-test-runners dispatch-build-bottle formula-analytics generate-advisories-api generate-analytics-api generate-cask-api generate-cask-ci-matrix generate-formula-api generate-internal-api generate-vulns-advisories pr-automerge pr-publish pr-pull pr-upload release update-license-data update-maintainers update-portable-ruby update-report update-sponsors vendor-install"
+    maintainer_cmds="advisory-match determine-test-runners dispatch-build-bottle formula-analytics generate-advisories-api generate-analytics-api generate-bottle-ci-matrix generate-cask-api generate-cask-ci-matrix generate-formula-api generate-internal-api generate-vulns-advisories pr-automerge pr-publish pr-pull pr-upload release update-license-data update-maintainers update-portable-ruby update-report update-sponsors vendor-install"
   fi
   user_aliases="$(__brew_list_aliases)"
   while IFS= read -r line
@@ -1707,6 +1707,24 @@ _brew_generate_analytics_api() {
       ;;
     *) ;;
   esac
+}
+
+_brew_generate_bottle_ci_matrix() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  case "${cur}" in
+    -*)
+      __brewcomp "
+      --debug
+      --help
+      --quiet
+      --runners
+      --verbose
+      "
+      return
+      ;;
+    *) ;;
+  esac
+  __brew_complete_formulae
 }
 
 _brew_generate_cask_api() {
@@ -3423,6 +3441,7 @@ _brew_update_portable_ruby() {
       __brewcomp "
       --debug
       --help
+      --print-target-version
       --quiet
       --verbose
       "
@@ -3835,6 +3854,7 @@ _brew() {
     formulae) _brew_formulae ;;
     generate-advisories-api) _brew_generate_advisories_api ;;
     generate-analytics-api) _brew_generate_analytics_api ;;
+    generate-bottle-ci-matrix) _brew_generate_bottle_ci_matrix ;;
     generate-cask-api) _brew_generate_cask_api ;;
     generate-cask-ci-matrix) _brew_generate_cask_ci_matrix ;;
     generate-cask-token) _brew_generate_cask_token ;;
