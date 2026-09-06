@@ -37,6 +37,9 @@ module Cask
     sig { returns(T.nilable(String)) }
     attr_reader :tag, :branch, :revision, :only_path, :verified
 
+    # URL kwargs still accepted from existing cask metadata but otherwise ignored.
+    DEPRECATED_URL_SPECS = [:verified].freeze
+
     extend Forwardable
 
     def_delegators :uri, :path, :scheme, :to_s
