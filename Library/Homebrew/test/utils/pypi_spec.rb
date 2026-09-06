@@ -31,6 +31,17 @@ RSpec.describe PyPI do
     let(:package_from_non_pypi_url) { described_class.new(non_pypi_package_url, is_url: true) }
     let(:other_package) { described_class.new("virtualenv==20.2.0") }
 
+    it "uses the sandboxed resolver for direct distribution URLs" do
+      allow(Formula).to receive(:[]).with("python").and_return(instance_double(Formula, ensure_installed!: nil))
+      allow(Utils).to receive(:popen_read).and_raise("unsandboxed metadata")
+      allow(PyPI).to receive(:pip_output).with([
+        Utils::Path.formula_opt_libexec("python")/"bin/python", "-m", "pip", "install", "-q", "--no-deps",
+        "--dry-run", "--ignore-installed", "--report", "/dev/stdout", non_pypi_package_url
+      ]).and_return('{"install":[{"metadata":{"name":"example","version":"1.0"}}]}')
+
+      expect(package_from_non_pypi_url.name).to eq("example")
+    end
+
     describe "initialize" do
       specify do
         expect(described_class.new("foo").name).to eq "foo"
@@ -154,15 +165,53 @@ RSpec.describe PyPI do
   end
 
   describe ".pip_report" do
+    it "captures metadata with a minimal sandbox environment" do
+      skip Sandbox.failure_reason unless Sandbox.available?
+      skip "Homebrew is running inside another sandbox" if Sandbox.avoid_nested_sandboxing?
+
+      ENV["HOMEBREW_METADATA_TEST"] = "parent value"
+      expect(described_class.pip_output(["/bin/sh", "-c", 'printf %s "${HOMEBREW_METADATA_TEST:-clean}"']))
+        .to eq("clean")
+    end
+
+    it "passes proxy settings into the sandbox" do
+      skip Sandbox.failure_reason unless Sandbox.available?
+      skip "Homebrew is running inside another sandbox" if Sandbox.avoid_nested_sandboxing?
+
+      ENV["HTTPS_PROXY"] = "http://proxy.example:3128"
+      expect(described_class.pip_output(["/bin/sh", "-c", 'printf %s "${HTTPS_PROXY:-clean}"']))
+        .to eq("http://proxy.example:3128")
+    end
+
+    it "refuses metadata inspection when the sandbox is unavailable" do
+      allow(Sandbox).to receive(:available?).and_return(false)
+      expect { described_class.pip_output(["/bin/echo", "metadata"]) }.to raise_error(RuntimeError, /sandbox/)
+    end
+
+    it "refuses metadata inspection inside another sandbox" do
+      allow(Sandbox).to receive_messages(available?: true, avoid_nested_sandboxing?: true)
+      expect { described_class.pip_output(["/bin/echo", "metadata"]) }
+        .to raise_error(RuntimeError, /another sandbox/)
+    end
+
+    it "warns when the available sandbox cannot isolate metadata changes" do
+      skip Sandbox.failure_reason unless Sandbox.available?
+      skip "Homebrew is running inside another sandbox" if Sandbox.avoid_nested_sandboxing?
+
+      allow(Sandbox).to receive(:full_write_isolation?).and_return(false)
+      expect { described_class.pip_output(["/bin/echo", "metadata"]) }
+        .to output(/cannot restrict file permissions or ownership/).to_stderr
+    end
+
     it "filters packages uploaded within the last day" do
       `true`
 
-      expect(Utils).to receive(:popen_read).with(
-        { "PIP_REQUIRE_VIRTUALENV" => "false" },
+      allow(Utils).to receive(:popen_read).and_raise("unsandboxed metadata")
+      expect(described_class).to receive(:pip_output).with([
         Utils::Path.formula_opt_libexec("python")/"bin/python", "-m", "pip", "install", "-q",
         "--disable-pip-version-check", "--dry-run", "--ignore-installed",
         "--uploaded-prior-to=P1D", "--report=/dev/stdout", "snakemake"
-      ).and_return('{"install":[]}')
+      ], print_stderr: false).and_return('{"install":[]}')
 
       expect(described_class.pip_report([PyPI::Package.new("snakemake")])).to eq([])
     end
@@ -175,13 +224,13 @@ RSpec.describe PyPI do
       sdist_url = "https://files.pythonhosted.org/packages/snakemake-5.29.0.tar.gz"
       allow(main).to receive(:pypi_info).and_return(["snakemake", sdist_url, "a" * 64, "5.29.0"])
 
-      expect(Utils).to receive(:popen_read).with(
-        { "PIP_REQUIRE_VIRTUALENV" => "false" },
+      allow(Utils).to receive(:popen_read).and_raise("unsandboxed metadata")
+      expect(described_class).to receive(:pip_output).with([
         Utils::Path.formula_opt_libexec("python")/"bin/python", "-m", "pip", "install", "-q",
         "--disable-pip-version-check", "--dry-run", "--ignore-installed",
         "--uploaded-prior-to=P1D", "--report=/dev/stdout",
         sdist_url, "pyyaml==6.0"
-      ).and_return('{"install":[]}')
+      ], print_stderr: false).and_return('{"install":[]}')
 
       expect(described_class.pip_report([main, dependency], ignore_cooldown_package: main)).to eq([])
     end
@@ -193,13 +242,13 @@ RSpec.describe PyPI do
       sdist_url = "https://files.pythonhosted.org/packages/snakemake-5.29.0.tar.gz"
       allow(main).to receive(:pypi_info).and_return(["snakemake", sdist_url, "a" * 64, "5.29.0"])
 
-      expect(Utils).to receive(:popen_read).with(
-        { "PIP_REQUIRE_VIRTUALENV" => "false" },
+      allow(Utils).to receive(:popen_read).and_raise("unsandboxed metadata")
+      expect(described_class).to receive(:pip_output).with([
         Utils::Path.formula_opt_libexec("python")/"bin/python", "-m", "pip", "install", "-q",
         "--disable-pip-version-check", "--dry-run", "--ignore-installed",
         "--uploaded-prior-to=P1D", "--report=/dev/stdout",
         "snakemake[foo] @ #{sdist_url}"
-      ).and_return('{"install":[]}')
+      ], print_stderr: false).and_return('{"install":[]}')
 
       expect(described_class.pip_report([main], ignore_cooldown_package: main)).to eq([])
     end
@@ -210,13 +259,13 @@ RSpec.describe PyPI do
       main = PyPI::Package.new("snakemake==5.29.0")
       allow(main).to receive(:pypi_info).and_return(nil)
 
-      expect(Utils).to receive(:popen_read).with(
-        { "PIP_REQUIRE_VIRTUALENV" => "false" },
+      allow(Utils).to receive(:popen_read).and_raise("unsandboxed metadata")
+      expect(described_class).to receive(:pip_output).with([
         Utils::Path.formula_opt_libexec("python")/"bin/python", "-m", "pip", "install", "-q",
         "--disable-pip-version-check", "--dry-run", "--ignore-installed",
         "--uploaded-prior-to=P1D", "--report=/dev/stdout",
         "snakemake==5.29.0"
-      ).and_return('{"install":[]}')
+      ], print_stderr: false).and_return('{"install":[]}')
 
       expect(described_class.pip_report([main], ignore_cooldown_package: main)).to eq([])
     end
