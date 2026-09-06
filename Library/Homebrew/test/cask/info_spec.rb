@@ -82,6 +82,26 @@ RSpec.describe Cask::Info, :cask do
     EOS
   end
 
+  it "marks a disabled Cask in the title" do
+    allow_any_instance_of(StringIO).to receive(:tty?).and_return(true)
+
+    expect do
+      described_class.info(Cask::CaskLoader.load(cask_path("livecheck/livecheck-disabled")), args:)
+    end.to output(
+      /#{Regexp.escape(uninstalled("livecheck-disabled"))} #{Regexp.escape(Formatter.error("(disabled)"))}/,
+    ).to_stdout
+  end
+
+  it "marks a deprecated Cask in the title" do
+    allow_any_instance_of(StringIO).to receive(:tty?).and_return(true)
+
+    expect do
+      described_class.info(Cask::CaskLoader.load(cask_path("livecheck/livecheck-deprecated")), args:)
+    end.to output(
+      /#{Regexp.escape(uninstalled("livecheck-deprecated"))} #{Regexp.escape(Formatter.warning("(deprecated)"))}/,
+    ).to_stdout
+  end
+
   it "prints inline summary information for casks" do
     cask = Cask::CaskLoader.load("local-transmission")
     allow_any_instance_of(StringIO).to receive(:tty?).and_return(true)
