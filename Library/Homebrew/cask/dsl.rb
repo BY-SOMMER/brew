@@ -438,11 +438,16 @@ module Cask
       caller_location = caller_locations.fetch(0)
       return @url unless uri
 
-      odeprecated "the `verified` parameter in the `url` stanza", "the default URL verification behaviour" if
-        options[:verified]
+      unless @cask.loaded_from_api?
+        URL::DEPRECATED_URL_SPECS.each do |spec|
+          next unless options[spec]
+
+          odeprecated "the `#{spec}` parameter in the `url` stanza", "the default URL verification behaviour"
+        end
+      end
 
       set_unique_stanza(:url, false) do
-        URL.new(uri, **options, caller_location:)
+        URL.new(uri, **options.except(*URL::DEPRECATED_URL_SPECS), caller_location:)
       end
     end
 

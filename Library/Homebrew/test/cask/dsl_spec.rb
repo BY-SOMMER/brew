@@ -413,6 +413,14 @@ RSpec.describe Cask::DSL, :cask, :no_api do
     it "prevents defining multiple urls" do
       expect { cask }.to raise_error(Cask::CaskInvalidError, /'url' stanza may only appear once/)
     end
+
+    it "deprecates the verified parameter for tap casks" do
+      expect do
+        Cask::Cask.new("legacy-verified") do
+          url "https://cdn.example.com/app.dmg", verified: "cdn.example.com/"
+        end
+      end.to raise_error(MethodDeprecatedError, /verified/)
+    end
   end
 
   describe "homepage stanza" do
