@@ -459,7 +459,8 @@ module Homebrew
       # Evaluate `hit` against every evidence's subject, each against the
       # record that evidence was matched against, and aggregate: `:affected` if
       # any subject is affected (a fixed primary must not hide an affected
-      # resource, or vice versa), else `:fixed` if any is fixed, else
+      # resource, or vice versa), else unknown if any subject is unresolved,
+      # else `:fixed` if any is fixed, else
       # `:not_applicable` only when every comparable subject says so. Returns
       # `[status, evidence]` where `evidence` is the one whose result was
       # chosen (used by {#first_fixed_version} and for the emitted record's
@@ -470,13 +471,17 @@ module Homebrew
           .returns(T.nilable([Vulnerability::RangeStatus, Evidence]))
       }
       def range_status(hit, formula_name: nil)
-        results = hit.evidence.filter_map do |ev|
-          status = evidence_range_status(ev, ev.subject_version)
-          [status, ev] if status
+        subjects = hit.evidence.reject { |ev| ev.strategy == :distro && ev.subject_version.nil? }
+                      .group_by(&:resource).map do |_, evidence|
+          results = evidence.filter_map do |ev|
+            status = evidence_range_status(ev, ev.subject_version)
+            [status, ev] if status
+          end
+          results.find { |s, _| s.affected? } || results.find { |s, _| s.fixed? } || results.first
         end
-        selected = results.find { |s, _| s.affected? } ||
-                   results.find { |s, _| s.fixed? } ||
-                   results.first
+        results = subjects.compact
+        selected = results.find { |s, _| s.affected? }
+        selected ||= results.find { |s, _| s.fixed? } || results.first unless subjects.include?(nil)
         override = @overrides&.advisory_override(formula_name, hit.identifiers) if formula_name
         return selected unless override
 
