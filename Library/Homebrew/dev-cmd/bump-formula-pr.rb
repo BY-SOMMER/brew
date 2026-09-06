@@ -119,7 +119,7 @@ module Homebrew
           formula = args.named.to_formulae.first
           raise FormulaUnspecifiedError if formula.blank?
 
-          raise ArgumentError, "This formula is disabled!" if formula.disabled?
+          raise ArgumentError, "This formula is disabled!" if DeprecateDisable.disabled_on_all_platforms?(formula)
           if formula.deprecation_reason == :does_not_build
             raise ArgumentError, "This formula is deprecated and does not build!"
           end

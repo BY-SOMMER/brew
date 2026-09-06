@@ -352,6 +352,21 @@ RSpec.describe Homebrew::Livecheck::SkipConditions do
   end
 
   describe "::skip_information" do
+    it "does not skip a cask disabled only on the current OS" do
+      cask = Cask::CaskLoader.load(<<~RUBY)
+        cask "partially-disabled" do
+          version "1.2.3"
+          url "https://brew.sh/test-1.2.3.tgz"
+
+          on_#{OS.mac? ? "macos" : "linux"} do
+            disable! date: "2020-01-01", because: :unmaintained
+          end
+        end
+      RUBY
+
+      expect(skip_conditions.skip_information(cask)).to eq({})
+    end
+
     context "when a formula without a `livecheck` block is deprecated" do
       it "skips" do
         expect(skip_conditions.skip_information(formulae[:deprecated]))
