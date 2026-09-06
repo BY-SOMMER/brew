@@ -80,6 +80,21 @@ RSpec.describe Homebrew::FormulaCreator do
   end
 
   describe "#write_formula!" do
+    it "writes upstream metadata as literal Ruby strings" do
+      allow(GitHub).to receive(:repository).with("example", "foo").and_return(
+        "description" => 'A "quoted" description <%# metadata %>',
+        "homepage"    => 'https://example.com/a"b',
+        "license"     => { "spdx_id" => 'License "example"' },
+      )
+      formula = described_class.new(url: "https://github.com/example/foo.git", version: "1", fetch: true)
+
+      expect(formula.write_formula!.read).to include(
+        %Q(desc #{'A "quoted" description <%# metadata %>'.inspect}),
+        %Q(homepage #{'https://example.com/a"b'.inspect}),
+        %Q(license #{'License "example"'.inspect}),
+      )
+    end
+
     shared_examples "expected" do |mode, includes:, excludes:|
       sig { returns(Pathname) }
       subject(:formula) do
