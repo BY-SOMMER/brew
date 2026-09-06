@@ -14,6 +14,7 @@ require "tab"
 require "json"
 require "cask/cask_loader"
 require "utils/spdx"
+require "utils/analytics"
 require "deprecate_disable"
 require "api"
 
