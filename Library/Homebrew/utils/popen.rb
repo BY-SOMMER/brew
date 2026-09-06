@@ -22,6 +22,19 @@ module Utils
   end
 
   sig {
+    params(
+      args:    T.nilable(T.any(String, Pathname, T::Hash[String, String])),
+      options: T.nilable(T.any(Pathname, String, Symbol)),
+    ).returns(String)
+  }
+  def self.popen_read_text(*args, **options)
+    output = popen_read(*args, **options)
+    raise TypeError, "Expected command output to be a String" unless output.is_a?(String)
+
+    output.force_encoding(Encoding.default_external)
+  end
+
+  sig {
     type_parameters(:U)
       .params(
         args:    T.nilable(T.any(String, Pathname, T::Hash[String, String])),
@@ -81,7 +94,7 @@ module Utils
       .params(
         args:    T::Array[T.nilable(T.any(Pathname, String, T::Hash[String, String]))],
         mode:    String,
-        options: T::Hash[Symbol, T.nilable(T.any(Pathname, String, Symbol))],
+        options: T::Hash[Symbol, T.nilable(T.any(Pathname, String, Symbol, T::Array[Symbol]))],
         _block:  T.nilable(T.proc.params(arg0: IO).returns(T.type_parameter(:U))),
       ).returns(T.any(T.type_parameter(:U), String))
   }
@@ -89,6 +102,7 @@ module Utils
     # `brew prof --vernier` uses this to avoid inheriting Vernier's active
     # native collector state through `IO.popen("-")` fork paths.
     if ENV["HOMEBREW_SPAWN_SYSTEM"] == "1"
+      options[:err] = [:child, :out] if options[:err] == :out
       options[:err] ||= File::NULL unless ENV["HOMEBREW_STDERR"]
       IO.popen(args, mode, options) do |pipe|
         return pipe.read unless block_given?

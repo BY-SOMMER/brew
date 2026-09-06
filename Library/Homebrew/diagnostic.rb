@@ -679,7 +679,9 @@ module Homebrew
       def check_git_newline_settings
         return unless Utils::Git.available?
 
-        autocrlf = HOMEBREW_REPOSITORY.cd { `git config --get core.autocrlf`.chomp }
+        autocrlf = HOMEBREW_REPOSITORY.cd do
+          Utils.popen_read_text(Utils::Git.git, "config", "--get", "core.autocrlf", err: :err).chomp
+        end
         return if autocrlf != "true"
 
         Finding.new(
@@ -1065,7 +1067,7 @@ module Homebrew
         return unless path.exist?
 
         status = path.cd do
-          `git status --untracked-files=all --porcelain 2>/dev/null`
+          Utils.popen_read_text(Utils::Git.git, "status", "--untracked-files=all", "--porcelain", err: File::NULL)
         end
         return if status.blank?
 

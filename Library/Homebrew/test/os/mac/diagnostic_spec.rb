@@ -64,6 +64,17 @@ RSpec.describe Homebrew::Diagnostic::Checks do
       .to match("Xcode alone is not sufficient on Big Sur")
   end
 
+  describe "#check_xcode_license_approved" do
+    it "returns a finding when the Xcode licence is unaccepted" do
+      system "false"
+      allow(Utils).to receive(:popen_read_text)
+        .with("/usr/bin/xcrun", "--find", "clang", err: :out)
+        .and_return("You have not agreed to the Xcode license agreements.")
+
+      expect(checks.check_xcode_license_approved&.to_s).to include("You have not agreed to the Xcode license.")
+    end
+  end
+
   describe "#fatal_preinstall_checks" do
     it "doesn't require developer tools on Apple Silicon" do
       allow(Hardware::CPU).to receive(:arm?).and_return(true)

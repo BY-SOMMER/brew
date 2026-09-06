@@ -24,6 +24,20 @@ RSpec.describe Utils do
         .to eq("brew: command not found: ./nonexistent\n")
       expect($CHILD_STATUS).to be_a_failure
     end
+
+    it "captures merged stderr when spawning instead of forking" do
+      ENV["HOMEBREW_SPAWN_SYSTEM"] = "1"
+
+      expect(described_class.popen_read("/bin/sh", "-c", "printf error >&2", err: :out)).to eq("error")
+    end
+  end
+
+  describe "::popen_read_text" do
+    it "returns output in the default external encoding" do
+      output = described_class.popen_read_text("/usr/bin/printf", "café")
+
+      expect([output, output.encoding, $CHILD_STATUS.success?]).to eq(["café", Encoding.default_external, true])
+    end
   end
 
   describe "::popen_write" do

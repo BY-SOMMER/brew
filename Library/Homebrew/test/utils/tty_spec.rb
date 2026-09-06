@@ -73,7 +73,7 @@ RSpec.describe Tty do
     end
 
     it "memoises a failed `stty size` probe instead of respawning it" do
-      expect(described_class).to receive(:`).with("/bin/stty size 2>/dev/null").once.and_return("")
+      expect(Utils).to receive(:popen_read_text).with("/bin/stty", "size", err: File::NULL).once.and_return("")
 
       # We call this twice to check the failure is memoised
       expect(described_class.size).to be_nil
@@ -83,13 +83,13 @@ RSpec.describe Tty do
     it "does not expose an unfinished size to another thread" do
       probe_started = Queue.new
       release_probe = Queue.new
-      allow(described_class).to receive(:`).with("/bin/stty size 2>/dev/null").and_invoke(
-        lambda { |_command|
+      allow(Utils).to receive(:popen_read_text).with("/bin/stty", "size", err: File::NULL).and_invoke(
+        proc {
           probe_started << true
           release_probe.pop
           "40 160"
         },
-        ->(_command) { "40 160" },
+        proc { "40 160" },
       )
 
       probing_thread = Thread.new { described_class.size }

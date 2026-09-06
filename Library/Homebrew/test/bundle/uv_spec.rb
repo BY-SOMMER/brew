@@ -110,14 +110,8 @@ RSpec.describe Homebrew::Bundle::Uv do
   describe "dumping" do
     subject(:dumper) { described_class }
 
-    let(:uv_tool_list_command) do
-      [
-        "uv tool list",
-        "--show-with",
-        "--show-extras",
-        "--show-version-specifiers",
-        "2>/dev/null",
-      ].join(" ")
+    let(:uv_tool_list_args) do
+      [Pathname("uv"), "tool", "list", "--show-with", "--show-extras", "--show-version-specifiers"]
     end
 
     context "when uv is not installed" do
@@ -139,7 +133,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "returns normalized package entries sorted by package name" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           ruff v0.14.14
           - ruff
           mkdocs v1.6.1 [with: mkdocs-material<10]
@@ -161,7 +155,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "parses a git source from the version specifier and dumps it" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           ruff v0.14.14 [required:  git+https://github.com/astral-sh/ruff.git]
           - ruff
         OUTPUT
@@ -177,7 +171,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "dumps a tool installed from a directory without a source" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           probetool v0.1.0 [required: file:///Users/test/src/probetool]
           - probetool
         OUTPUT
@@ -186,7 +180,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "dumps a tool installed from a git+file:// URL without a source" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           probetool v0.1.0 [required: git+file:///Users/test/src/probetool]
           - probetool
         OUTPUT
@@ -195,7 +189,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "dumps a tool installed from a directory named like a git repository without a source" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           probetool v0.1.0 [required: file:///Users/test/src/probetool.git]
           - probetool
         OUTPUT
@@ -204,7 +198,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "ignores a bare version constraint in the version specifier" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           ruff v0.14.14 [required: >=0.1]
           - ruff
         OUTPUT
@@ -214,7 +208,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "dumps both with and source segments" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           ruff v0.14.14 [with: httpx>=0.27] [required: git+https://github.com/astral-sh/ruff.git]
           - ruff
         OUTPUT
@@ -225,7 +219,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "dumps correct Brewfile entries" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           ruff v0.14.14 [with: httpx>=0.27]
           - ruff
         OUTPUT
@@ -234,7 +228,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "handles tools with no optional metadata" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           ruff v0.14.14
           - ruff
         OUTPUT
@@ -243,14 +237,14 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "returns empty packages when no tools are installed" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return("")
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return("")
 
         expect(dumper.packages).to be_empty
         expect(dumper.dump).to eql("")
       end
 
       it "handles multiple with dependencies" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           mkdocs v1.6.1 [with: mkdocs-material, mkdocs-awesome-page-plugin]
           - mkdocs
         OUTPUT
@@ -259,7 +253,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "keeps comma-constrained with requirements as a single requirement" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           ruff v0.14.14 [with: httpx>=0.27, <0.29]
           - ruff
         OUTPUT
@@ -269,7 +263,7 @@ RSpec.describe Homebrew::Bundle::Uv do
       end
 
       it "preserves extras for the main tool requirement" do
-        allow(described_class).to receive(:`).with(uv_tool_list_command).and_return(<<~OUTPUT)
+        allow(Utils).to receive(:popen_read_text).with(*uv_tool_list_args, err: File::NULL).and_return(<<~OUTPUT)
           fastapi v0.129.0 [extras: all, standard]
           - fastapi
         OUTPUT

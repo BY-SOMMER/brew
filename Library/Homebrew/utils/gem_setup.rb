@@ -223,7 +223,7 @@ module Utils
 
       if @bundle_installed_groups != groups
         bundle = File.join(find_in_path("bundle"), "bundle")
-        bundle_check_output = `#{bundle} check 2>&1`
+        bundle_check_output = IO.popen([bundle, "check"], err: [:child, :out], &:read)
         bundle_check_failed = !$CHILD_STATUS.success?
 
         # for some reason sometimes the exit code lies so check the output too.

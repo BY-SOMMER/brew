@@ -30,17 +30,17 @@ RSpec.describe Utils::Git do
       File.write("README.md", "README")
       system git, "add", HOMEBREW_CACHE/"README.md"
       system git, "commit", "-m", "File added"
-      @h1 = `git rev-parse HEAD`
+      @h1 = Utils.popen_read("git", "rev-parse", "HEAD", err: :err)
 
       File.write("README.md", "# README")
       system git, "add", HOMEBREW_CACHE/"README.md"
       system git, "commit", "-m", "written to File"
-      @h2 = `git rev-parse HEAD`
+      @h2 = Utils.popen_read("git", "rev-parse", "HEAD", err: :err)
 
       File.write("LICENSE.txt", "LICENCE")
       system git, "add", HOMEBREW_CACHE/"LICENSE.txt"
       system git, "commit", "-m", "File added"
-      @h3 = `git rev-parse HEAD`
+      @h3 = Utils.popen_read("git", "rev-parse", "HEAD", err: :err)
 
       File.write("LICENSE.txt", "LICENSE")
       system git, "add", HOMEBREW_CACHE/"LICENSE.txt"
@@ -49,7 +49,7 @@ RSpec.describe Utils::Git do
       File.write("LICENSE.txt", "test")
       system git, "add", HOMEBREW_CACHE/"LICENSE.txt"
       system git, "commit", "-m", "written to File"
-      @cherry_pick_commit = `git rev-parse HEAD`
+      @cherry_pick_commit = Utils.popen_read("git", "rev-parse", "HEAD", err: :err)
       system git, "reset", "--hard", "HEAD^"
     end
   end

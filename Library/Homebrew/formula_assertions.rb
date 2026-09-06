@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "utils/output"
+require "utils/popen"
 
 module Homebrew
   # Helper functions available in formula `test` blocks.
@@ -31,7 +32,11 @@ module Homebrew
     def shell_output(cmd, result = 0)
       ohai cmd.to_s
       assert_path_exists cmd, "Pathname '#{cmd}' does not exist!" if cmd.is_a?(Pathname)
-      output = `#{cmd}`
+      output = if cmd.is_a?(Pathname)
+        Utils.popen_read_text("/bin/sh", "-c", 'exec "$1"', "shell_output", cmd.expand_path.to_s, err: :err)
+      else
+        Utils.popen_read_text("/bin/sh", "-c", cmd, err: :err)
+      end
       assert_equal result, $CHILD_STATUS.exitstatus
       output
     rescue Minitest::Assertion
