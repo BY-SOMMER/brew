@@ -17,6 +17,8 @@ RSpec.describe Homebrew::Completions do
       (completions_dir/shell).mkpath
     end
     internal_path.mkpath
+    allow(Tap.fetch("homebrew/bar").git_repository).to receive(:origin_url)
+      .and_return("https://github.com/Homebrew/homebrew-bar")
     external_path.mkpath
   end
 
