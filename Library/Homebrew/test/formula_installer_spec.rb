@@ -269,6 +269,21 @@ RSpec.describe FormulaInstaller do
   end
 
   describe "#post_install_formula_path" do
+    it "compares installed versions without evaluating installed recipes" do
+      formula = formula("installed-version") do
+        T.bind(self, T.class_of(Formula))
+        url "foo-1.0"
+      end
+      installer = described_class.new(formula)
+      (formula.prefix/".brew").mkpath
+      formula.path.dirname.mkpath
+      formula.path.write("# current recipe")
+      allow(formula).to receive(:any_installed_prefix).and_return(formula.prefix)
+      allow(Formulary).to receive(:factory).and_raise("Recipe evaluation is not permitted")
+
+      expect(installer.post_install_formula_path).to eq(formula.path)
+    end
+
     it "uses the API formula for structured-only post-installs" do
       formula = formula("api-install-steps") do
         T.bind(self, T.class_of(Formula))

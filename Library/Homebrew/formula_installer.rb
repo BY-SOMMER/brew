@@ -1439,12 +1439,10 @@ on_request: installed_on_request?, options:)
     # * We're installing a local bottle file
     # * We're building from source
     # * The formula doesn't exist in the tap (or the tap isn't installed)
-    # * The formula in the tap has a different `pkg_version``.
+    # * The installed keg has a different version from the selected formula.
     #
-    # In all other cases, including if the formula from the keg is unreadable
-    # (third-party taps may `require` some of their own libraries) or if there
-    # is no formula present in the keg (as is the case with very old bottles),
-    # use the formula from the tap.
+    # Otherwise use the selected tap formula, without evaluating the keg's
+    # recipe while choosing the path.
     tap_formula_path = formula_path
     installed_prefix = formula.any_installed_prefix
     return tap_formula_path if installed_prefix.nil?
@@ -1460,15 +1458,9 @@ on_request: installed_on_request?, options:)
 
     return keg_formula_path unless tap_formula_path.exist?
 
-    begin
-      keg_formula = Formulary.factory(keg_formula_path)
-      tap_formula = Formulary.factory(tap_formula_path)
-      return keg_formula_path if keg_formula.pkg_version != tap_formula.pkg_version
+    return keg_formula_path if Keg.new(installed_prefix).version != formula.pkg_version
 
-      tap_formula_path
-    rescue FormulaUnavailableError, FormulaUnreadableError
-      tap_formula_path
-    end
+    tap_formula_path
   end
 
   sig { void }

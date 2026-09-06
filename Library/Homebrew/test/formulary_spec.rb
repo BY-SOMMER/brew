@@ -950,6 +950,14 @@ RSpec.describe Formulary do
   end
 
   describe "::loader_for" do
+    it "does not select formulae from the download cache by name" do
+      stub_const("HOMEBREW_CACHE_FORMULA", HOMEBREW_CACHE/"Formula")
+      HOMEBREW_CACHE_FORMULA.mkpath
+      (HOMEBREW_CACHE_FORMULA/"cached-only.rb").write("# cache data")
+
+      expect(described_class.loader_for("cached-only")).to be_a(described_class::NullLoader)
+    end
+
     context "when given a relative path with two slashes" do
       it "returns a `FromPathLoader`" do
         mktmpdir.cd do
