@@ -823,7 +823,7 @@ RSpec.describe Homebrew::Vulns::Match do
       expect([
         matcher.first_fixed_version(current, git_hit.call("1.1")),
         matcher.first_reintroduced_version(current, git_hit.call("3.0")),
-      ]).to eq ["2.0", :not_reintroduced]
+      ]).to eq [:history_unavailable, :not_reintroduced]
     end
 
     it "returns :never_affected when a fixed resource was absent from earlier formula revisions" do
@@ -866,6 +866,32 @@ RSpec.describe Homebrew::Vulns::Match do
       )
 
       expect(matcher.first_fixed_version(current, hit)).to eq "2.0"
+    end
+
+    it "returns :history_unavailable when an older revision after a resource-absence gap cannot be loaded" do
+      stub_history([["3.0", "1.2.0"], ["2.0", nil], nil])
+      current = formula("requests") do
+        T.bind(self, T.class_of(Formula))
+        url "https://files.pythonhosted.org/packages/aa/bb/cc/requests-3.0.tar.gz"
+        resource("certifi") do
+          url "https://files.pythonhosted.org/packages/11/22/33/certifi-1.2.0.tar.gz"
+        end
+      end
+      hit = make_hit(
+        vuln("id" => "CVE-1", "affected" => [
+          { "package" => { "ecosystem" => "PyPI", "name" => "certifi" },
+            "ranges"  => [{ "type"   => "ECOSYSTEM",
+                            "events" => [{ "introduced" => "0" }, { "fixed" => "1.0.8" }] }] },
+        ]),
+        ev(:registry, ecosystem: "PyPI", name: "certifi", subject_version: "1.2.0", resource: "certifi"),
+      )
+
+      expect(matcher.first_fixed_version(current, hit)).to eq :history_unavailable
+    end
+
+    it "returns a verified boundary before reaching an older unloadable revision" do
+      stub_history(["2.31.0", "2.28.1", "2.28.0", nil])
+      expect(matcher.first_fixed_version(requests, hit_fixed_at("2.28.1"))).to eq "2.28.1"
     end
 
     it "follows a resource package across historical resource-label changes" do
@@ -939,9 +965,9 @@ RSpec.describe Homebrew::Vulns::Match do
       expect(matcher.first_fixed_version(current, hit)).to eq "3.0"
     end
 
-    it "stops at an unloadable revision and returns the last known fixed pkg_version" do
+    it "returns :history_unavailable when a revision cannot be loaded" do
       stub_history(["2.31.0", "2.30.0", nil, "2.28.0"])
-      expect(matcher.first_fixed_version(requests, hit_fixed_at("2.28.1"))).to eq "2.30.0"
+      expect(matcher.first_fixed_version(requests, hit_fixed_at("2.28.1"))).to eq :history_unavailable
     end
 
     it "returns nil when the current version is still affected" do
@@ -1038,7 +1064,7 @@ RSpec.describe Homebrew::Vulns::Match do
       allow(FormulaVersions).to receive(:new).and_return(fv)
 
       expect(matcher.first_reintroduced_version(requests, hit_fixed_at("2.32.0"))).to eq :not_reintroduced
-      expect(matcher.first_fixed_version(requests, hit_fixed_at("2.28.1"))).to eq "2.31.0"
+      expect(matcher.first_fixed_version(requests, hit_fixed_at("2.28.1"))).to eq :history_unavailable
     end
 
     it "does not let fixed evidence mask another uncheckable historical subject" do
