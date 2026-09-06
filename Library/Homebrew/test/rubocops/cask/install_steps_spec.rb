@@ -492,6 +492,31 @@ RSpec.describe RuboCop::Cop::Cask::InstallSteps, :config do
     CASK
   end
 
+  it "autocorrects permission work using the arch template helper" do
+    expect_offense <<~'CASK'
+      cask "foo" do
+        version :latest
+        sha256 :no_check
+
+        postflight do
+        ^^^^^^^^^^^^^ Use `postflight_steps` for simple file preparation.
+          set_ownership "#{staged_path}/foo-#{arch}"
+        end
+      end
+    CASK
+
+    expect_correction <<~'CASK'
+      cask "foo" do
+        version :latest
+        sha256 :no_check
+
+        postflight_steps do
+          set_ownership "foo-#{arch}"
+        end
+      end
+    CASK
+  end
+
   it "does not autocorrect dynamic, unsupported or mixed permission work" do
     expect_offense <<~'CASK'
       cask "foo" do
@@ -500,7 +525,7 @@ RSpec.describe RuboCop::Cop::Cask::InstallSteps, :config do
 
         postflight do
         ^^^^^^^^^^^^^ Casks must use `postflight_steps` instead of `postflight`.
-          set_ownership "#{staged_path}/foo-#{arch}"
+          set_ownership "#{staged_path}/foo-#{language}"
         end
       end
     CASK

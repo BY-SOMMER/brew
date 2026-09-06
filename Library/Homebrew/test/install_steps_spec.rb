@@ -323,6 +323,38 @@ RSpec.describe Homebrew::InstallSteps do
     expect(written).to include("literal = {{unknown}} {single}")
   end
 
+  specify "expands the cask arch token" do
+    context.define_singleton_method(:arch) { "-m1" }
+    steps = Homebrew::InstallSteps::DSL.build(default_base: :var) do
+      write_file "arch", "example#{arch}.app", append_newline: true
+    end
+
+    Homebrew::InstallSteps::Runner.new(context:).run(steps)
+
+    expect((root/"var/arch").read).to eq("example-m1.app\n")
+  end
+
+  specify "expands the cask arch token to an empty string without a matching value" do
+    context.define_singleton_method(:arch) { nil }
+    steps = Homebrew::InstallSteps::DSL.build(default_base: :var) do
+      write_file "arch", "example{{arch}}.app", append_newline: true
+    end
+
+    Homebrew::InstallSteps::Runner.new(context:).run(steps)
+
+    expect((root/"var/arch").read).to eq("example.app\n")
+  end
+
+  specify "leaves the arch token verbatim for a context without an arch" do
+    steps = Homebrew::InstallSteps::DSL.build(default_base: :var) do
+      write_file "arch", "example{{arch}}.app", append_newline: true
+    end
+
+    Homebrew::InstallSteps::Runner.new(context:).run(steps)
+
+    expect((root/"var/arch").read).to eq("example{{arch}}.app\n")
+  end
+
   specify "expands formula and cask identity tokens" do
     context.define_singleton_method(:name) { "example-formula" }
     context.define_singleton_method(:token) { "example-cask" }

@@ -104,6 +104,11 @@ module Homebrew
         "{{token}}"
       end
 
+      sig { returns(String) }
+      def arch
+        "{{arch}}"
+      end
+
       sig { returns(TemplateVersion) }
       def version
         TEMPLATE_VERSION
@@ -1412,6 +1417,8 @@ module Homebrew
           context_value(:name)&.to_s
         when "name"
           context_name
+        when "arch"
+          context_arch
         when "token"
           context_value(:token)&.to_s
         when "user"
@@ -1494,6 +1501,15 @@ module Homebrew
       def context_name
         value = context_value(:name) || context_value(:token)
         value&.to_s
+      end
+
+      sig { returns(T.nilable(String)) }
+      def context_arch
+        # Casks without a matching `arch` stanza value expand to an empty
+        # string, matching the deprecated `postflight` block.
+        return unless @context.respond_to?(:arch)
+
+        context_value(:arch).to_s
       end
 
       sig { returns(T.nilable(String)) }
