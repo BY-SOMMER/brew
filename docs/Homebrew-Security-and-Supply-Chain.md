@@ -183,7 +183,6 @@ Builds, `fetch` steps, `post_install` steps and tests run inside a sandbox that 
 * **macOS sandboxing** has long confined formula builds.
 * **Linux sandboxing** extends the same protection to Homebrew on Linux.
 * **Sandboxing reads of sensitive locations** prevents build and test code from reading sensitive parts of your home directory (such as credentials and SSH keys), limiting what a malicious build could exfiltrate.
-* **Sandboxed Python metadata inspection** runs the `pip` metadata resolution behind `brew update-python-resources` inside the sandbox with a disposable home and a minimal environment, since resolving a source distribution's metadata can run its build hooks.
 
 ### Environment filtering
 
