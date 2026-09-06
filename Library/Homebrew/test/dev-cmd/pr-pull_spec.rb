@@ -154,7 +154,7 @@ RSpec.describe Homebrew::DevCmd::PrPull do
         SystemCommand.safe_system Utils::Git.git, "init"
         SystemCommand.safe_system Utils::Git.git, "add", formula_file
         SystemCommand.safe_system Utils::Git.git, "commit", "-m", "foo 1.0 (new formula)"
-        original_hash = `git rev-parse HEAD`.chomp
+        original_hash = Utils.popen_read("git", "rev-parse", "HEAD", err: :err).chomp
         File.write(formula_file, formula_revision)
         SystemCommand.safe_system Utils::Git.git, "commit", formula_file, "-m", "revision"
         File.write(formula_file, formula_version)
@@ -170,7 +170,7 @@ RSpec.describe Homebrew::DevCmd::PrPull do
       cd path do
         SystemCommand.safe_system Utils::Git.git, "add", cask_file
         SystemCommand.safe_system Utils::Git.git, "commit", "-m", "food 1.0 (new cask)"
-        original_hash = `git rev-parse HEAD`.chomp
+        original_hash = Utils.popen_read("git", "rev-parse", "HEAD", err: :err).chomp
         File.write(cask_file, cask_rebuild)
         SystemCommand.safe_system Utils::Git.git, "commit", cask_file, "-m", "rebuild"
         File.write(cask_file, cask_version)
@@ -190,7 +190,7 @@ RSpec.describe Homebrew::DevCmd::PrPull do
           SystemCommand.safe_system Utils::Git.git, "init"
           SystemCommand.safe_system Utils::Git.git, "add", formula_file
           SystemCommand.safe_system Utils::Git.git, "commit", "-m", "foo 1.0 (new formula)"
-          `git rev-parse HEAD`.chomp
+          Utils.popen_read("git", "rev-parse", "HEAD", err: :err).chomp
         end
       end
 

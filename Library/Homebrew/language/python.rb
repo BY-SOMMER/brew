@@ -7,6 +7,7 @@ require "utils/shell"
 require "utils"
 require "utils/output"
 require "utils/path"
+require "utils/popen"
 
 module Language
   # Helper functions for Python formulae.
@@ -37,7 +38,7 @@ module Language
 
     sig { params(python: T.any(String, Pathname)).returns(T.nilable(Version)) }
     def self.major_minor_version(python)
-      version = `#{python} --version 2>&1`.chomp[/(\d\.\d+)/, 1]
+      version = Utils.popen_read_text(python, "--version", err: :out).chomp[/(\d\.\d+)/, 1]
       return unless version
 
       Version.new(version)
@@ -101,7 +102,9 @@ module Language
 
     sig { params(python: T.any(String, Pathname)).returns(Pathname) }
     def self.user_site_packages(python)
-      Pathname.new(`#{python} -c "import site; print(site.getusersitepackages())"`.chomp)
+      Pathname.new(
+        Utils.popen_read_text(python, "-c", "import site; print(site.getusersitepackages())", err: :err).chomp,
+      )
     end
 
     sig { params(python: T.any(String, Pathname), path: T.any(String, Pathname)).returns(T::Boolean) }

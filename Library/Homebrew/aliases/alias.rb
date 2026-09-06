@@ -5,6 +5,7 @@ require "utils/editor"
 
 require "fileutils"
 require "utils/output"
+require "utils/shell"
 
 module Homebrew
   module Aliases
@@ -95,7 +96,7 @@ module Homebrew
 
         script.open("w") do |f|
           f.write <<~EOS
-            #! #{`which bash`.chomp}
+            #! #{Utils::Shell.which("bash")}
             # alias: brew #{name}
             #{content}
           EOS

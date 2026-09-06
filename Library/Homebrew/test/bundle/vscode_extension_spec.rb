@@ -13,7 +13,7 @@ RSpec.describe Homebrew::Bundle::VscodeExtension do
     context "when vscode is not installed" do
       before do
         described_class.reset!
-        allow(described_class).to receive_messages(package_manager_executable: nil, "`": "")
+        allow(described_class).to receive(:package_manager_executable).and_return(nil)
       end
 
       specify do
@@ -36,8 +36,8 @@ RSpec.describe Homebrew::Bundle::VscodeExtension do
           tamasfe.even-better-toml
         EOF
 
-        allow(described_class).to receive(:`)
-          .with('"code" --list-extensions 2>/dev/null')
+        allow(Utils).to receive(:popen_read_text)
+          .with(Pathname("code"), "--list-extensions", err: File::NULL)
           .and_return(output)
         expect(dumper.extensions).to eql([
           "catppuccin.catppuccin-vsc",
@@ -55,8 +55,8 @@ RSpec.describe Homebrew::Bundle::VscodeExtension do
           GitHub.codespaces
         EOF
 
-        allow(described_class).to receive(:`)
-          .with('"code" --list-extensions 2>/dev/null')
+        allow(Utils).to receive(:popen_read_text)
+          .with(Pathname("code"), "--list-extensions", err: File::NULL)
           .and_return(output)
 
         expect(dumper.extensions).to eql(["github.codespaces"])

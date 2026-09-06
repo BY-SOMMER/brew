@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "version"
+require "utils/popen"
 
 # Helper class for gathering information about development tools.
 #
@@ -66,7 +67,7 @@ class DevelopmentTools
     def clang_version_output
       @clang_version_output ||= T.let(
         if (path = locate("clang"))
-          `#{path} --version`
+          Utils.popen_read_text(path, "--version", err: :err)
         end, T.nilable(String)
       )
     end
@@ -106,7 +107,8 @@ class DevelopmentTools
     def llvm_clang_build_version
       @llvm_clang_build_version ||= T.let(begin
         path = Formula["llvm"].opt_prefix/"bin/clang"
-        if path.executable? && (build_version = `#{path} --version`[/clang version (\d+\.\d\.\d)/, 1])
+        if path.executable? &&
+           (build_version = Utils.popen_read_text(path, "--version", err: :err)[/clang version (\d+\.\d\.\d)/, 1])
           Version.new(build_version)
         else
           Version::NULL
@@ -130,7 +132,9 @@ class DevelopmentTools
         path = HOMEBREW_PREFIX/"opt/#{CompilerSelector.preferred_gcc}/bin"/cc
         path = locate(cc) unless path.exist?
         version = if path &&
-                     (build_version = `#{path} --version`[/gcc(?:(?:-\d+(?:\.\d)?)? \(.+\))? (\d+\.\d\.\d)/, 1])
+                     (build_version = Utils.popen_read_text(path, "--version", err: :err)[
+                       /gcc(?:(?:-\d+(?:\.\d)?)? \(.+\))? (\d+\.\d\.\d)/, 1
+                     ])
           Version.new(build_version)
         else
           Version::NULL

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "utils/path"
+require "utils/popen"
 
 module Utils
   module Shell
@@ -97,7 +98,7 @@ module Utils
 
     sig { returns(T.nilable(Symbol)) }
     def parent
-      from_path(`ps -p #{Process.ppid} -o ucomm=`.strip)
+      from_path(Utils.popen_read_text("ps", "-p", Process.ppid.to_s, "-o", "ucomm=", err: :err).strip)
     end
 
     # Quote values. Quoting keys is overkill.
