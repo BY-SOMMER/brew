@@ -29,7 +29,7 @@ module Cask
       output << "#{repo}\n" if repo
       deps = deps_info(cask, mark_uninstalled: installed)
       output << deps if deps
-      requirements = requirements_info(cask, mark_uninstalled: installed)
+      requirements = requirements_info(cask)
       output << requirements if requirements
       language = language_info(cask)
       output << language if language
