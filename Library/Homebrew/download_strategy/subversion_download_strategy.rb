@@ -62,7 +62,7 @@ class SubversionDownloadStrategy < VCSDownloadStrategy
 
   sig { params(_block: T.proc.params(arg0: String, arg1: String).void).void }
   def externals(&_block)
-    out = silent_command("svn", args: ["propget", "svn:externals", @url]).stdout
+    out = silent_command("svn", args: ["propget", "svn:externals", cached_location]).stdout
     out.chomp.split("\n").each do |line|
       name, url = line.split(/\s+/)
       raise "Invalid svn:externals definition: #{line.inspect}" if name.nil? || url.nil?
