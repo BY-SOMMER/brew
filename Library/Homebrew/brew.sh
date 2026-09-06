@@ -478,6 +478,12 @@ case "${HOMEBREW_COMMAND}" in
   tc) HOMEBREW_COMMAND="typecheck" ;;
   x) HOMEBREW_COMMAND="exec" ;;
 esac
+
+# Keep in sync with `Commands.internal_cmd_name?` in `commands.rb`.
+if [[ "${HOMEBREW_COMMAND}" == */* || "${HOMEBREW_COMMAND}" == "." || "${HOMEBREW_COMMAND}" == ".." ]]
+then
+  odie "Unknown command: brew ${HOMEBREW_COMMAND}"
+fi
 # `update.sh` assumes normal repositories, so fail before it mutates a worktree.
 if [[ "${HOMEBREW_COMMAND}" == "update" && -z "${HOMEBREW_HELP}" && -f "${HOMEBREW_REPOSITORY}/.git" ]]
 then

@@ -42,14 +42,20 @@ module Commands
   # middle due to dots in URLs or paths.
   DESCRIPTION_SPLITTING_PATTERN = /\.(?>\s|$)/
 
+  # Keep in sync with the command name check in `brew.sh`.
+  sig { params(cmd: String).returns(T::Boolean) }
+  def self.internal_cmd_name?(cmd)
+    cmd.exclude?("/") && %w[. ..].exclude?(cmd)
+  end
+
   sig { params(cmd: String).returns(T::Boolean) }
   def self.valid_internal_cmd?(cmd)
-    Utils::Ruby.require?(HOMEBREW_CMD_PATH/cmd)
+    internal_cmd_name?(cmd) && Utils::Ruby.require?(HOMEBREW_CMD_PATH/cmd)
   end
 
   sig { params(cmd: String).returns(T::Boolean) }
   def self.valid_internal_dev_cmd?(cmd)
-    Utils::Ruby.require?(HOMEBREW_DEV_CMD_PATH/cmd)
+    internal_cmd_name?(cmd) && Utils::Ruby.require?(HOMEBREW_DEV_CMD_PATH/cmd)
   end
 
   sig { params(cmd: String).returns(T::Boolean) }
@@ -75,6 +81,8 @@ module Commands
 
   sig { params(cmd: String).returns(T.nilable(Pathname)) }
   def self.internal_cmd_path(cmd)
+    return unless internal_cmd_name?(cmd)
+
     [
       HOMEBREW_CMD_PATH/"#{cmd}.rb",
       HOMEBREW_CMD_PATH/"#{cmd}.sh",
@@ -83,6 +91,8 @@ module Commands
 
   sig { params(cmd: String).returns(T.nilable(Pathname)) }
   def self.internal_dev_cmd_path(cmd)
+    return unless internal_cmd_name?(cmd)
+
     [
       HOMEBREW_DEV_CMD_PATH/"#{cmd}.rb",
       HOMEBREW_DEV_CMD_PATH/"#{cmd}.sh",
