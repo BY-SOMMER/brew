@@ -186,14 +186,15 @@ module Homebrew
         params(formula_or_cask: T.any(Formula, Cask::Cask)).returns(T::Boolean)
       }
       def skip_ineligible_package!(formula_or_cask)
+        disabled = DeprecateDisable.disabled_on_all_platforms?(formula_or_cask)
         if formula_or_cask.is_a?(Formula)
-          skip = formula_or_cask.disabled? || formula_or_cask.head_only?
+          skip = disabled || formula_or_cask.head_only?
           name = formula_or_cask.name
-          text = "Formula is #{formula_or_cask.disabled? ? "disabled" : "HEAD-only"} so not accepting updates.\n"
+          text = "Formula is #{disabled ? "disabled" : "HEAD-only"} so not accepting updates.\n"
         else
-          skip = formula_or_cask.disabled? || formula_or_cask.version.latest?
+          skip = disabled || formula_or_cask.version.latest?
           name = formula_or_cask.token
-          text = if formula_or_cask.disabled?
+          text = if disabled
             "Cask is disabled so not accepting updates.\n"
           else
             "Cask uses `version :latest` so `brew bump` cannot check it.\n"

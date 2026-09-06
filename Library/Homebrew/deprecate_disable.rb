@@ -36,6 +36,17 @@ module DeprecateDisable
   REMOVE_DISABLED_TIME_WINDOW = 12
   REMOVE_DISABLED_BEFORE = T.let((Date.today << REMOVE_DISABLED_TIME_WINDOW).freeze, Date)
 
+  # Whether a formula or cask is disabled on every OS/architecture combination.
+  sig { params(formula_or_cask: T.any(Formula, Cask::Cask)).returns(T::Boolean) }
+  def disabled_on_all_platforms?(formula_or_cask)
+    return false unless formula_or_cask.disabled?
+    return true unless formula_or_cask.on_system_blocks_exist?
+
+    formula_or_cask.to_hash_with_variations.fetch("variations").each_value.all? do |variation|
+      variation.fetch("disabled", true)
+    end
+  end
+
   sig { params(formula_or_cask: T.any(Formula, Cask::Cask)).returns(T.nilable(Symbol)) }
   def type(formula_or_cask)
     return :deprecated if formula_or_cask.deprecated?
